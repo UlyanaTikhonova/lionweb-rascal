@@ -1,0 +1,126 @@
+{
+  "serializationFormatVersion": "2023.1",
+  "languages": [
+    {
+      "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+      "version": "0"
+    },
+    {
+      "key": "LionCore-builtins",
+      "version": "2023.1"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "1109945625693563396",
+      "classifier": {
+        "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+        "version": "0",
+        "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM0MzExMzg"
+      },
+      "properties": [
+        {
+          "property": {
+            "language": "LionCore-builtins",
+            "version": "2023.1",
+            "key": "LionCore-builtins-INamed-name"
+          },
+          "value": "TestExprInLionWeb"
+        }
+      ],
+      "containments": [
+        {
+          "containment": {
+            "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+            "version": "0",
+            "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM0MzExMzgvMTEwOTk0NTYyNTY5MzUxMjM3OA"
+          },
+          "children": [
+            "1109945625693563562"
+          ]
+        }
+      ],
+      "references": [],
+      "annotations": [],
+      "parent": null
+    },
+    {
+      "id": "1109945625693563562",
+      "classifier": {
+        "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+        "version": "0",
+        "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM1MTA4OTk"
+      },
+      "properties": [],
+      "containments": [
+        {
+          "containment": {
+            "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+            "version": "0",
+            "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM1MTA4OTkvMTEwOTk0NTYyNTY5MzUxMTE3MA"
+          },
+          "children": [
+            "1109945625693565565"
+          ]
+        },
+        {
+          "containment": {
+            "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+            "version": "0",
+            "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM1MTA4OTkvMTEwOTk0NTYyNTY5MzUxMTMyMQ"
+          },
+          "children": [
+            "1109945625693565627"
+          ]
+        }
+      ],
+      "references": [],
+      "annotations": [],
+      "parent": "1109945625693563396"
+    },
+    {
+      "id": "1109945625693565565",
+      "classifier": {
+        "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+        "version": "0",
+        "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM1MTIxMjI"
+      },
+      "properties": [
+        {
+          "property": {
+            "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+            "version": "0",
+            "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM1MTIxMjIvMTEwOTk0NTYyNTY5MzU2NDAyOQ"
+          },
+          "value": "10"
+        }
+      ],
+      "containments": [],
+      "references": [],
+      "annotations": [],
+      "parent": "1109945625693563562"
+    },
+    {
+      "id": "1109945625693565627",
+      "classifier": {
+        "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+        "version": "0",
+        "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM1MTIxMjI"
+      },
+      "properties": [
+        {
+          "property": {
+            "language": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkx",
+            "version": "0",
+            "key": "Y2IwNDBkMTgtYzE2Yy00M2NhLWFhMTctY2Q5ZDRhNjMwNDkxLzExMDk5NDU2MjU2OTM1MTIxMjIvMTEwOTk0NTYyNTY5MzU2NDAyOQ"
+          },
+          "value": "20"
+        }
+      ],
+      "containments": [],
+      "references": [],
+      "annotations": [],
+      "parent": "1109945625693563562"
+    }
+  ]
+}
