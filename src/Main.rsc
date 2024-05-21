@@ -10,7 +10,7 @@ import lionweb::converter::lionjson;
 int main(int testArgument=0) {
 
     // println(readFile(|project://input/ExprLanguageLW.json|));
-    SerializationChunk json = readJSON(#SerializationChunk, |project:///input/ExprLanguageLW.json|);
+    SerializationChunk json = readJSON(#SerializationChunk, |project://lionweb-rascal-0.1/input/ExprLanguageLW.json|);
     // JSONText jsonTree = parse(#JSONText, |home:///Documents/lionweb/ExprLanguageLW.json|);
 
     println("argument: <testArgument>");
