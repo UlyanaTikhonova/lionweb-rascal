@@ -1,28 +1,31 @@
 module lionweb::converter::lionjson
 
 data SerializationChunk
-    = SerializationChunk(str serializationFormatVersion, list[UsedLanguage] languages, list[Node] nodes);
+    = SerializationChunk(str serializationFormatVersion = "", 
+            list[UsedLanguage] languages = [], list[Node] nodes = []);
 
 data UsedLanguage
-    = UsedLanguage(Id key, str version);
+    = UsedLanguage(str key = "", str version = "");
 
 data Node
-    = Node(Id id, Id parent, list[Id] annotations, MetaPointer classifier, list[Containment] containments, list[Property] properties, list[Reference] references);
+    = Node(MetaPointer classifier, str id = "", str parent = "", list[str] annotations = [], 
+        list[Containment] containments = [], list[Property] properties = [], 
+        list[Reference] references = []);
 
 data Containment
-    = Containment(list[Id] children, MetaPointer containment);
+    = Containment(MetaPointer containment, list[str] children = []);
 
 data Property
-    = Property(str \value, MetaPointer property);
+    = Property(MetaPointer property, str \value = "");
 
 data Reference
-    = Reference(MetaPointer reference, list[ReferenceTarget] targets);
+    = Reference(MetaPointer reference, list[ReferenceTarget] targets = []);
 
 data MetaPointer
-    = MetaPointer(Id language, str version, Id key);
+    = MetaPointer(str language = "", str version = "", str key = "");
 
 data ReferenceTarget
-    = ReferenceTarget(Id reference, str resolveInfo);
+    = ReferenceTarget(str reference, str resolveInfo);
 
-data Id
-    = ref(str id) | null();
+// data Id
+//     = ref(str id = "") | "";
