@@ -15,6 +15,10 @@ import lionweb::converter::lionjson;
 //         [ json2lion(n) | list[JSON] objs := json["nodes"], JSON n <- nodes]);
 
 
+test bool inOutTest(SerializationChunk x)
+  = parseJSON(#SerializationChunk, asJSON(x)) == x
+  when bprintln(x);
+
 int main(int testArgument=0) {
 
     // println(readFile(|project://input/ExprLanguageLW.json|));
