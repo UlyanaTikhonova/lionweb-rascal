@@ -1,31 +1,33 @@
 module Main
 
 import IO;
-import lang::json::ast::JSON;
-import lang::json::ast::Implode;
 import lang::json::IO;
-import ParseTree;
-import lang::json::\syntax::JSON;
+import vis::Text;
+
 import lionweb::converter::lionjson;
-
-
-// SerializationChunk json2lion(JSON json)
-//   = SerializationChunk(json["serializationFormatVersion"],
-//         [ json2lion(l) | list[JSON] objs := json["languages"], JSON l <- objs ],
-//         [ json2lion(n) | list[JSON] objs := json["nodes"], JSON n <- nodes]);
-
+import lionweb::converter::json2lioncore;
+// import lionweb::m3::lioncore;
+import lionweb::converter::lioncore2ADT;
 
 test bool inOutTest(SerializationChunk x)
   = parseJSON(#SerializationChunk, asJSON(x)) == x
   when bprintln(x);
 
 int main(int testArgument=0) {
+  
+    SerializationChunk langChunk = readJSON(#SerializationChunk, |project://lionweb-rascal/input/ExprLanguageLW.json|);
+    // println(prettyNode(langChunk));
+    // SerializationChunk instanceChunk = readJSON(#SerializationChunk, |project://lionweb-rascal/input/ExprInstanceLW.json|);
+    // println(prettyNode(instanceChunk));
+    
+    // println(langChunk);
 
-    // println(readFile(|project://input/ExprLanguageLW.json|));
-    //SerializationChunk json = readJSON(#SerializationChunk, |project://lionweb-rascal-0.1/input/ExprLanguageLW.json|);
-    start[JSONText] jsonTree = parse(#start[JSONText], |project://lionweb-rascal-0.1/input/ExprLanguageLW.json|);
-    iprintln(buildAST(jsonTree));
+    println(prettyNode(jsonlang2lioncore(langChunk)[0]));
+    writeLionADTModule(jsonlang2lioncore(langChunk)[0]);
 
-    println("argument: <testArgument>");
+    // start[JSONText] jsonTree = parse(#start[JSONText], |project://lionweb-rascal/input/ExprLanguageLW.json|);
+    // iprintln(buildAST(jsonTree));
+
     return testArgument;
 }
+
