@@ -10,7 +10,7 @@ import List;
 import String;
 
 void writeLionADTModule(Language lionlang) 
-  = writeFile(|project://lionweb-rascal/output/<lionlang.name>.rsc|,
+  = writeFile(|project://lionweb-rascal-0.1/output/<lionlang.name>.rsc|,
                 "module <lionlang.name>
                 '
                 '// Code generated from lionweb language.
