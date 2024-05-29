@@ -29,11 +29,30 @@
     <dependency>
       <groupId>org.rascalmpl</groupId>
       <artifactId>rascal</artifactId>
-      <version>0.34.1</version>
+      <version>0.26.4</version>
     </dependency>
   </dependencies>
 
   <build>
+  <sourceDirectory>src</sourceDirectory>
+		<resources>
+			<resource>
+				<directory>src</directory>
+				<excludes>
+					<exclude>**/*.java</exclude>
+					<exclude>**/*.class</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<directory>.</directory>
+				<filtering>false</filtering>
+				<includes>
+					<include>META-INF/RASCAL.MF</include>
+					<include>src/**/*.rsc</include>
+				</includes>
+			</resource>
+		</resources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -45,18 +64,42 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.rascalmpl</groupId>
-        <artifactId>rascal-maven-plugin</artifactId>
-        <version>0.8.2</version>
-        <configuration>
-          <errorsAsWarnings>true</errorsAsWarnings>
-          <bin>${project.build.outputDirectory}</bin>
-          <srcs>
-            <src>${project.basedir}/src</src>
-          </srcs>
-        </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
       </plugin>
+      
+
+      <plugin>
+				<groupId>org.rascalmpl</groupId>
+				<artifactId>rascal-maven-plugin</artifactId>
+				<version>0.4.5-RC3</version>
+                                <configuration>
+                                     <errorsAsWarnings>true</errorsAsWarnings>
+					<bin>${project.build.outputDirectory}</bin>
+					<srcs>
+						<src>${project.basedir}/src</src>
+					</srcs>
+				</configuration>
+				<executions>
+					<execution>
+						<id>compile</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>package</id>
+						<phase>pre-package</phase>
+						<goals>
+							<goal>package</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
     </plugins>
+
   </build>
 </project>
     

@@ -2,12 +2,16 @@ module lionweb::converter::lionjson
 
 import lionweb::pointer;
 
+
+
 // alias Id = str;
 
 data SerializationChunk
     = SerializationChunk(str serializationFormatVersion = "", 
                          list[UsedLanguage] languages = [], 
                          list[Node] nodes = []);
+
+
 
 data UsedLanguage
     = UsedLanguage( Id key = "", 
