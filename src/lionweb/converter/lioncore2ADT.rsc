@@ -2,155 +2,152 @@ module lionweb::converter::lioncore2ADT
 
 import lionweb::m3::lioncore;
 import lionweb::pointer;
+import lionweb::m3::lionspace;
 
 import IO;
-import DateTime;
 import Type;
 import List;
 import String;
 
-void writeLionADTModule(Language lionlang) 
-  = writeFile(|project://lionweb-rascal-0.1/output/<lionlang.name>.rsc|,
-                "module <lionlang.name>
-                '
-                '// Code generated from lionweb language.
-                '// Date: <now()>
-                '
-                'import lionweb::pointer;
-                'import DateTime;
-                '
-                '<lion2rsc(lionlang)>");
+/* 
+ * Mapping Lion Core to Rascal ADT (Symbols and Productions) 
+ */
 
-str lion2rsc(Language lionlang)
-    = langDependencies(lionlang.dependsOn) + langEntities(lionlang.entities, lionlang);
-
-str langDependencies(list[Pointer[Language]] langDependencies)
-    = "";
-
-str langEntities(list[LanguageEntity] langEntities, Language lang) 
-    = intercalate("\n\n", [production2rsc(entity2production(entity, lang)) | entity <-langEntities]);
-
-
-// ---------------------------- Mapping Lion Core to Rascal ADT (Symbols and Productions) ----------------------
-
-// Question: can we query the values of attributes here: abstract = true ?
-Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = true)), Language lang) {
+Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = true)), 
+                             Language lang, 
+                             LionSpace lionspace = defaultSpace(lang)) {
     Symbol cptADT = adt(cpt.name, []);
-    set[Production] alts = {wrapInheritance(Classifier(cpt), cptADT, ext) | 
-                                                            ext <- collectExtensions(Classifier(cpt), lang)};
+    set[Production] alts = {wrapInheritance(Classifier(cpt), cptADT, ext, lang, lionspace) | 
+                                                ext <- collectExtensions(Classifier(cpt), lang)};
     return choice(cptADT, alts);
 }
 
-Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = false)), Language lang) {
+Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = false)), 
+                             Language lang, 
+                             LionSpace lionspace = defaultSpace(lang)) {
     Symbol cptADT = adt(cpt.name, []);
-    Production definition = cons(label(cpt.name, cptADT), 
-                                 [feature2parameter(f) | f <- cpt.features], [],
-                                //  [], [feature2parameter(f) | f <- cpt.features], 
+    Production definition = cons(label(cpt.name, cptADT),
+                                 [feature2parameter(f, lang, lionspace) | f <- cpt.features, !hasDefaultValue(f)],
+                                 [feature2parameter(f, lang, lionspace) | f <- cpt.features, hasDefaultValue(f)], 
                                  {});
 
     set[Production] alts = {definition} + 
-                {wrapInheritance(Classifier(cpt), cptADT, ext) | ext <- collectExtensions(Classifier(cpt), lang)};
+                {wrapInheritance(Classifier(cpt), cptADT, ext, lang, lionspace) | 
+                                                ext <- collectExtensions(Classifier(cpt), lang)};
     return choice(cptADT, alts);
 }
 
-Production entity2production(LanguageEntity(DataType(Enumeration enum)), Language lang) {
+Production entity2production(LanguageEntity(DataType(Enumeration enum)), 
+                             Language lang, 
+                             LionSpace lionspace = defaultSpace(lang)) {
     Symbol enumADT = adt(enum.name, []);
     set[Production] alts = {cons(label(el.name, enumADT), [], [], {}) | el <- enum.literals};
     return choice(enumADT, alts);
 }
 
-Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child) {
+// Inheritance in Rascal:
+// - extending classifier appears in the constructor of the parent classifier as a field
+// - features of the extending classifier are inserted into the parent constructor
+Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child, Language lang, LionSpace lionspace) {
     return cons(label(parent.name, parentADT), 
-                [label(field(child.name), adt(child.name, []))], // extending classifier appears in the constructor of the parent classifier as a field
-                [], // features of the extending classifier are inserted into the parent constructor 
-                {});
-}
-
-// Question: can I generalize here? (not Concept but classifier)
-set[Classifier] collectExtensions(Classifier class, Language lang) {
-    return {};
-}
-
-// TODO: if the feature is optional, use rascal Maybe
-Symbol feature2parameter(Feature f) {
-    // Classifier featureType = findNode(f.\type, lang);
-    return label(f.name, adt("reference to type", []));
+                [label(field(child.name), adt(child.name, []))],
+                [feature2parameter(f, lang, lionspace) | f <- child.features],  
+                {\tag("subtype")});
 }
 
 str field(str x) = "\\<uncapitalize(x)>";
 
-// --------------------------- Serialize Rascal ADT in Rascal syntax --------------------------------------
+set[Classifier] collectExtensions(Classifier class, Language lang) {
+    set[Classifier] extensions = {};
+    Id classId = class.key;
 
-str production2rsc(choice(Symbol typeDef, set[Production] alterns)) 
-  = "data <typeDef.name>\n  = <intercalate("\n  | ", [ alternative2rsc(p) | Production p <- alterns ])>
-    '  ;";
+    visit(lang) {
+        case e:Concept(extends = [*L, Pointer(classId)]): extensions = extensions + {Classifier(e)};
+        case e:Interface(extends = [*L, Pointer(classId)]): extensions = extensions + {Classifier(e)};
+        case e:Annotation(extends = [*L, Pointer(classId)]): extensions = extensions + {Classifier(e)};
+    };
 
+    return extensions;
+}
 
-// str default4subclass(label(str fld, Symbol s), str kid)
-//   = "<symbol2rsc(s)> <fld> = <kid>.<fld>";
+// To which category of parameters this feature belongs - depends on whether we can construct a default value for it
+bool hasDefaultValue(Feature(Property _))
+    = true;
 
-default str alternative2rsc(cons(label(str c, _), list[Symbol] ps, list[Symbol] kws, _))
-  = "<c>(<intercalate("\n      , ", args)>)"
-  when
-    list[str] args := [ param2rsc(p) | p <- ps ] + [ keywordparam2rsc(k) | k <- kws ];
+bool hasDefaultValue(Feature(Link l))
+    = l.optional || l.multiple;
+
+// TODO: we might need a separate treatment for a reference (pointer or Id?)     
+
+// Unfold features into parameters of the constructor
+// An optional feature is represented by rascal list.
+// A multiple link is represented by a rascal list too.
+// Question: why is it not possible to pick up `optional` from a Feature directly (I have to unfold it into a Link and Property) 
+Symbol feature2parameter(Feature(Link l, optional = true), Language lang, LionSpace lionspace) 
+    = label(l.name, \list(type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace)))));
+
+Symbol feature2parameter(Feature(Link l, optional = false), Language lang, LionSpace lionspace) 
+    = label(l.name, type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace))));
+
+Symbol feature2parameter(Feature(l:Link(_, multiple = true)), Language lang, LionSpace lionspace) 
+    = label(l.name, \list(type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace))))); 
+
+Symbol feature2parameter(Feature(l:Link(_, optional = true, multiple = true)), Language lang, LionSpace lionspace) 
+    = label(l.name, \list(type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace)))));    
+
+Symbol feature2parameter(Feature(Property p, optional = false), Language lang, LionSpace lionspace) 
+    = label(p.name, type2symbol(LanguageEntity(findReferencedElement(p.\type, lang, lionspace))));  
+
+Symbol feature2parameter(Feature(Property p, optional = true), Language lang, LionSpace lionspace) 
+    = label(p.name, \list(type2symbol(LanguageEntity(findReferencedElement(p.\type, lang, lionspace)))));
+
+// TODO: change above to use maybe and proper reference
+
+// Find referenced type and transform it into a rascal symbol
+
+Symbol type2symbol(LanguageEntity(DataType(PrimitiveType pt, name = "Integer", key="LionCore-builtins-Integer")))
+    = \int();
+
+Symbol type2symbol(LanguageEntity(DataType(PrimitiveType pt, name = "String", key="LionCore-builtins-String")))
+    = \str();   
+
+Symbol type2symbol(LanguageEntity(DataType(PrimitiveType pt, name = "Boolean", key="LionCore-builtins-Boolean")))
+    = \bool();     
+
+default Symbol type2symbol(LanguageEntity le)
+    = adt(le.name, []);
+
+&T findReferencedElement(Pointer[&T] pointer, Language lang, LionSpace lionspace) {
+    list[&T] elements = [];
+
+    if (pointer != null()) {
+        Id elemId = pointer.uid;
+        visit(lang) {
+            // only concrete classes are possible here
+            // Question: is there a smarter way to do this using &T?
+            case e:Concept(key = elemId): elements = elements + [Classifier(e)];
+            case e:Interface(key = elemId): elements = elements + [Classifier(e)];
+            case e:Annotation(key = elemId): elements = elements + [Classifier(e)];
+            case e:PrimitiveType(key = elemId):  elements = elements + [DataType(e)];
+            case e:Enumeration(key = elemId): elements = elements + [DataType(e)];
+            case e:Language(key = elemId): elements = elements + [e];
+        };
+
+        // TODO: if not in this language, search only in the languages that this language depends on.
+        if (size(elements) == 0) {
+            println("lion space: <lionspace>");
+            &T elem = lionspace.lookup(pointer)[0];
+            println("Found the element: <elem>");
+            elements = elements + [elem];
+        }
+    }
+    // TODO: validate that the found element is actually of type &T
+
+    // if (size(elements) == 0) throw "No element found for the pointer: <pointer>";
+    if (size(elements) == 0) elements = [DataType(PrimitiveType(name = "not found type"))];
+    if (size(elements) > 1) throw "More than one element found for the pointer: <pointer>";
     
-str param2rsc(label(str name, Symbol s)) = "<symbol2rsc(s)> <name>";
-
-str keywordparam2rsc(label(str name, Symbol s)) = "<symbol2rsc(s)> <name> = <default4symbol(s)>";
-
-str symbol2rsc(\int()) = "int";
-
-str symbol2rsc(\bool()) = "bool";
-
-str symbol2rsc(\real()) = "real";
-
-str symbol2rsc(\str()) = "str";
-
-str symbol2rsc(\datetime()) = "datetime";
-
-str symbol2rsc(\list(Symbol s)) = "list[<symbol2rsc(s)>]";
-
-str symbol2rsc(\tuple(list[Symbol] ss)) = "tuple[<intercalate(", ", [ symbol2rsc(s) | s <- ss])>]";
-
-str symbol2rsc(label(str n, Symbol s)) = "<symbol2rsc(s)> <n>";
-
-str symbol2rsc(adt(str n, list[Symbol] ps)) 
-  = "<qualify(n)><ps != [] ? "[" + intercalate(", ", [ symbol2rsc(p) | p <- ps ]) + "]" : "">";
-  
-str qualify("Maybe") = "util::Maybe::Maybe";
-  
-str qualify("Ref") = "lang::ecore::Refs::Ref";
-
-str qualify("Id") = "lang::ecore::Refs::Id";
-  
-default str qualify(str x) = x;
-  
-str default4symbol(\int()) = "0";
-
-str default4symbol(\bool()) = "false";
-
-str default4symbol(\real()) = "0.0";
-
-str default4symbol(\str()) = "\"\"";
-
-str default4symbol(\datetime()) = "DateTime::now()"; 
-
-str default4symbol(\list(Symbol s)) = "[]";
-
-str default4symbol(\label(str _, Symbol s)) = default4symbol(s);
-
-str default4symbol(\tuple(list[Symbol] ss)) 
-  = "\<<intercalate(", ", [ default4symbol(s) | s <- ss])>\>";
-
-str default4symbol(adt("Ref", list[Symbol] ps)) 
-  = "null()";
-
-str default4symbol(adt("Id", list[Symbol] ps)) 
-  = "noId()";
-
-str default4symbol(adt("Maybe", list[Symbol] ps)) 
-  = "nothing()";
-
-default str default4symbol(adt(str x, list[Symbol] ps)) { throw "No default value for ADT <x>"; }
+    return elements[0];
+}
 
 // -------------------------------- Tests -------------------------------------------------------------

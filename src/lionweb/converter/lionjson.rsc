@@ -2,16 +2,12 @@ module lionweb::converter::lionjson
 
 import lionweb::pointer;
 
-
-
 // alias Id = str;
 
 data SerializationChunk
     = SerializationChunk(str serializationFormatVersion = "", 
                          list[UsedLanguage] languages = [], 
                          list[Node] nodes = []);
-
-
 
 data UsedLanguage
     = UsedLanguage( Id key = "", 
@@ -22,9 +18,9 @@ data Node
             Id id = "",
             Id parent = "", 
             list[Id] annotations = [],             
-            list[lionweb::converter::lionjson::Containment] containments = [], 
-            list[lionweb::converter::lionjson::Property] properties = [], 
-            list[lionweb::converter::lionjson::Reference] references = []);
+            list[Containment] containments = [], 
+            list[Property] properties = [], 
+            list[Reference] references = []);
 
 data Containment
     = Containment(MetaPointer containment, 

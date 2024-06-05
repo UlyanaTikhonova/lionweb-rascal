@@ -2,12 +2,9 @@ module lionweb::m3::lioncore
 
 import lionweb::pointer;
 
-
-
 data INamed
     = INamed(IKeyed ikeyed,
              str name = ikeyed.name);
-
 
 data IKeyed
     = IKeyed(Language language,

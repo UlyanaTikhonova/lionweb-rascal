@@ -8,6 +8,7 @@ import lionweb::converter::lionjson;
 import lionweb::converter::json2lioncore;
 // import lionweb::m3::lioncore;
 import lionweb::converter::lioncore2ADT;
+import lionweb::converter::lionADT2rsc;
 
 test bool inOutTest(SerializationChunk x)
   = parseJSON(#SerializationChunk, asJSON(x)) == x
@@ -15,7 +16,7 @@ test bool inOutTest(SerializationChunk x)
 
 int main(int testArgument=0) {
   
-    SerializationChunk langChunk = readJSON(#SerializationChunk, |project://lionweb-rascal-0.1/input/ExprLanguageLW.json|);
+    SerializationChunk langChunk = readJSON(#SerializationChunk, |project://lionweb-rascal/input/ExprLanguageLW.json|);
     // println(prettyNode(langChunk));
     // SerializationChunk instanceChunk = readJSON(#SerializationChunk, |project://lionweb-rascal/input/ExprInstanceLW.json|);
     // println(prettyNode(instanceChunk));
