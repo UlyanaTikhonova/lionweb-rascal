@@ -13,6 +13,9 @@ import String;
  * Mapping Lion Core to Rascal ADT (Symbols and Productions) 
  */
 
+list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"]; 
+
+// Abstract concept only wraps inheritance: choice over its extensions
 Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = true)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
@@ -22,13 +25,17 @@ Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = t
     return choice(cptADT, alts);
 }
 
+// Not abstract concept has its own features and might be extended by other concepts
+// Features of a concept are added to parameters or keyword parameters, depending on whether its type
+// has a default value for it.
 Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = false)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol cptADT = adt(cpt.name, []);
+    list[tuple[Symbol, bool]] entityParameters = [feature2parameter(f, lang, lionspace) | f <- cpt.features];
     Production definition = cons(label(cpt.name, cptADT),
-                                 [feature2parameter(f, lang, lionspace) | f <- cpt.features, !hasDefaultValue(f)],
-                                 [feature2parameter(f, lang, lionspace) | f <- cpt.features, hasDefaultValue(f)], 
+                                 [param | <param, hasDefault> <- entityParameters, hasDefault == false],
+                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true], 
                                  {});
 
     set[Production] alts = {definition} + 
@@ -37,6 +44,7 @@ Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = f
     return choice(cptADT, alts);
 }
 
+// Enumeration is a choice over its literals
 Production entity2production(LanguageEntity(DataType(Enumeration enum)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
@@ -45,13 +53,16 @@ Production entity2production(LanguageEntity(DataType(Enumeration enum)),
     return choice(enumADT, alts);
 }
 
+// TODO: entity2production for Interface and Annotation
+
 // Inheritance in Rascal:
 // - extending classifier appears in the constructor of the parent classifier as a field
 // - features of the extending classifier are inserted into the parent constructor
 Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child, Language lang, LionSpace lionspace) {
+    list[tuple[Symbol, bool]] childParameters = [feature2parameter(f, lang, lionspace) | f <- child.features];
     return cons(label(parent.name, parentADT), 
                 [label(field(child.name), adt(child.name, []))],
-                [feature2parameter(f, lang, lionspace) | f <- child.features],  
+                [param | <param, _> <- childParameters],  
                 {\tag("subtype")});
 }
 
@@ -70,41 +81,46 @@ set[Classifier] collectExtensions(Classifier class, Language lang) {
     return extensions;
 }
 
-// To which category of parameters this feature belongs - depends on whether we can construct a default value for it
-bool hasDefaultValue(Feature(Property _))
-    = true;
-
-bool hasDefaultValue(Feature(Link l))
-    = l.optional || l.multiple;
-
-// TODO: we might need a separate treatment for a reference (pointer or Id?)     
-
 // Unfold features into parameters of the constructor
-// An optional feature is represented by rascal list.
-// A multiple link is represented by a rascal list too.
+// - An optional feature is represented by rascal list (default = []).
+// - A multiple link is represented by a rascal list too (default = []).
+// - Whether the feature has a default value depends on its type, so it is also calculated here.
 // Question: why is it not possible to pick up `optional` from a Feature directly (I have to unfold it into a Link and Property) 
-Symbol feature2parameter(Feature(Link l, optional = true), Language lang, LionSpace lionspace) 
-    = label(l.name, \list(type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace)))));
 
-Symbol feature2parameter(Feature(Link l, optional = false), Language lang, LionSpace lionspace) 
-    = label(l.name, type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace))));
+tuple[Symbol, bool] feature2parameter(Feature(Link l, optional = true), Language lang, LionSpace lionspace) {
+    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));    
+    return <label(field(l.name), \list(type2symbol(featureType))), true>;
+}
 
-Symbol feature2parameter(Feature(l:Link(_, multiple = true)), Language lang, LionSpace lionspace) 
-    = label(l.name, \list(type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace))))); 
+tuple[Symbol, bool] feature2parameter(Feature(Link l, optional = false), Language lang, LionSpace lionspace) {
+    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));
+    return <label(field(l.name), type2symbol(featureType)), false>;
+}
 
-Symbol feature2parameter(Feature(l:Link(_, optional = true, multiple = true)), Language lang, LionSpace lionspace) 
-    = label(l.name, \list(type2symbol(LanguageEntity(findReferencedElement(l.\type, lang, lionspace)))));    
+tuple[Symbol, bool] feature2parameter(Feature(l:Link(_, multiple = true)), Language lang, LionSpace lionspace)  {
+    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));
+    return <label(field(l.name), \list(type2symbol(featureType))), true>;
+} 
 
-Symbol feature2parameter(Feature(Property p, optional = false), Language lang, LionSpace lionspace) 
-    = label(p.name, type2symbol(LanguageEntity(findReferencedElement(p.\type, lang, lionspace))));  
+tuple[Symbol, bool] feature2parameter(Feature(l:Link(_, optional = true, multiple = true)), Language lang, LionSpace lionspace)  {
+    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));
+    return <label(field(l.name), \list(type2symbol(featureType))), true>;
+}
 
-Symbol feature2parameter(Feature(Property p, optional = true), Language lang, LionSpace lionspace) 
-    = label(p.name, \list(type2symbol(LanguageEntity(findReferencedElement(p.\type, lang, lionspace)))));
+tuple[Symbol, bool] feature2parameter(Feature(Property p, optional = false), Language lang, LionSpace lionspace)  {
+    LanguageEntity featureType = LanguageEntity(findReferencedElement(p.\type, lang, lionspace));
+    return <label(field(p.name), type2symbol(featureType)), featureType.name in BUILTIN_TYPES>;
+} 
 
-// TODO: change above to use maybe and proper reference
+tuple[Symbol, bool] feature2parameter(Feature(Property p, optional = true), Language lang, LionSpace lionspace) {
+    LanguageEntity featureType = LanguageEntity(findReferencedElement(p.\type, lang, lionspace));
+    return <label(field(p.name), \list(type2symbol(featureType))), true>;
+}
 
-// Find referenced type and transform it into a rascal symbol
+// TODO: change above to use Maybe and proper reference
+// (including the default value)
 
+// Transform type into a rascal symbol
 Symbol type2symbol(LanguageEntity(DataType(PrimitiveType pt, name = "Integer", key="LionCore-builtins-Integer")))
     = \int();
 
@@ -112,11 +128,12 @@ Symbol type2symbol(LanguageEntity(DataType(PrimitiveType pt, name = "String", ke
     = \str();   
 
 Symbol type2symbol(LanguageEntity(DataType(PrimitiveType pt, name = "Boolean", key="LionCore-builtins-Boolean")))
-    = \bool();     
+    = \bool();
 
 default Symbol type2symbol(LanguageEntity le)
     = adt(le.name, []);
 
+// Find the referenced type or the used language 
 &T findReferencedElement(Pointer[&T] pointer, Language lang, LionSpace lionspace) {
     list[&T] elements = [];
 
@@ -133,7 +150,7 @@ default Symbol type2symbol(LanguageEntity le)
             case e:Language(key = elemId): elements = elements + [e];
         };
 
-        // TODO: if not in this language, search only in the languages that this language depends on.
+        // TODO: if not in this language, search only in the languages that this language depends on (now we look in the whole lion space)
         if (size(elements) == 0) {
             println("lion space: <lionspace>");
             &T elem = lionspace.lookup(pointer)[0];

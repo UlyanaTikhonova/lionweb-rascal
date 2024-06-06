@@ -11,16 +11,21 @@ import List;
 import String;
 
 void writeLionADTModule(Language lionlang) 
-  = writeFile(|project://lionweb-rascal/output/<lionlang.name>.rsc|,
-                "module <lionlang.name>
+  = writeFile(moduleLocation(lionlang.name),
+                "module <moduleName(lionlang.name)>
                 '
                 '// Code generated from lionweb language.
                 '// Date: <now()>
                 '
-                'import lionweb::pointer;
                 'import DateTime;
                 '
                 '<lion2rsc(lionlang)>");
+
+str moduleName(str langName)
+    = intercalate("::", split(".", langName));
+
+loc moduleLocation(str langName)
+    = |project://lionweb-rascal/src/<intercalate("/", split(".", langName)[..-1])>| + (last(split(".", langName)) + ".rsc");  
 
 str lion2rsc(Language lionlang)
     = langDependencies(lionlang.dependsOn) + langEntities(lionlang.entities, lionlang);
@@ -115,7 +120,16 @@ str default4symbol(adt("Id", list[Symbol] ps))
 str default4symbol(adt("Maybe", list[Symbol] ps)) 
   = "nothing()";
 
-// default str default4symbol(adt(str x, list[Symbol] ps)) { throw "No default value for ADT <x>"; }
+// default for enumeration
+// we need to find the production that 
+// str default4symbol(adt(str x, [*L, cons(label(str y, adt(str x, [])), [], [], {})])) 
+//    = "<y>()";
+// str default4symbol(adt(str x, [cons(adt(str x, _), str y, [])])) {
+//     // = "<y>()";
+//     println("Matched the enumeration ADT!");
+//     return "<y>()";
+// }
 
+// default str default4symbol(adt(str x, list[Symbol] ps)) { throw "No default value for ADT <x>"; }
 default str default4symbol(adt(str x, list[Symbol] ps)) 
    = "No default value for ADT <x>";
