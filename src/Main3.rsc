@@ -10,7 +10,12 @@ import f1re::lionweb::examples::expression::lang;
 import f1re::lionweb::examples::expression::\syntax;
 
 int main3(int testArgument=0) {
+    // Try out dynamic instantiation with make
+    f1re::lionweb::examples::expression::lang::Literal lit = 
+            make(#f1re::lionweb::examples::expression::lang::Literal, "lit", [], ("value": 30));
+    println(prettyNode(lit));
 
+    // Try out implode
     // str demoExprs = "10 + 20";
 
     // f1re::lionweb::examples::expression::\syntax::BinaryExpression exprTree = 
