@@ -9,8 +9,9 @@ import DateTime;
 import Type;
 import List;
 import String;
+import Map;
 
-void writeLionADTModule(Language lionlang) 
+void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT) 
   = writeFile(moduleLocation(lionlang.name),
                 "module <moduleName(lionlang.name)>
                 '
@@ -19,7 +20,7 @@ void writeLionADTModule(Language lionlang)
                 '
                 'import DateTime;
                 '
-                '<lion2rsc(lionlang)>");
+                '<lion2rsc(lionlang, langADT)>");
 
 str moduleName(str langName)
     = intercalate("::", split(".", langName));
@@ -27,14 +28,14 @@ str moduleName(str langName)
 loc moduleLocation(str langName)
     = |project://lionweb-rascal/src/<intercalate("/", split(".", langName)[..-1])>| + (last(split(".", langName)) + ".rsc");  
 
-str lion2rsc(Language lionlang)
-    = langDependencies(lionlang.dependsOn) + langEntities(lionlang.entities, lionlang);
+str lion2rsc(Language lionlang, map[Symbol, Production] langADT)
+    = langDependencies(lionlang.dependsOn) + langADTs(langADT);
 
 str langDependencies(list[Pointer[Language]] langDependencies)
     = "";
 
-str langEntities(list[LanguageEntity] langEntities, Language lang) 
-    = intercalate("\n\n", [production2rsc(entity2production(entity, lang)) | entity <-langEntities]);
+str langADTs(map[Symbol, Production] langADT) 
+    = intercalate("\n\n", [production2rsc(prod) | prod <- range(langADT)]);
 
 
 // --------------------------- Serialize Rascal ADT in Rascal syntax --------------------------------------

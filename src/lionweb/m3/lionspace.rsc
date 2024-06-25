@@ -6,7 +6,8 @@ import IO;
 import lionweb::m3::lioncore;
 import lionweb::pointer;
 
-alias LionSpace = tuple[void(Language) add, list[&T](Pointer[&T]) lookup];
+// Currently lookup searches for pointers in all registered languages (not models, and not scoped langs/models)
+alias LionSpace = tuple[void(Language) add, list[&T](Pointer[&T]) lookup, tuple[IKeyed, Language](Id, Id) findType];
 
 LionSpace newLionSpace() {
     // Lioncore M3 language instance
@@ -25,12 +26,13 @@ LionSpace newLionSpace() {
                         LanguageEntity(DataType(PrimitiveType(name = "Boolean", key = "LionCore-builtins-Boolean"))),
                         LanguageEntity(DataType(PrimitiveType(name = "Integer", key = "LionCore-builtins-Integer")))]);
 
-    list[Language] lionLanguages = [lionBuiltinLanguage, lionMetaLanguage];                        
+    map[Id, Language] lionLanguages = ("LionCore-builtins": lionBuiltinLanguage, 
+                                        "LionCore-M3": lionMetaLanguage);                        
 
     void add_(Language lang) {
         println("In the add of lion space function");
         // TODO: check that we are not adding a language that already exists in the space (using its key)
-        lionLanguages = lionLanguages + [lang];
+        lionLanguages[lang.key] = lang;
     }
 
     // Question: I cannot use generic type &T as a return here: I get CallFailed exception. How to overcome this? With IKeyed?
@@ -40,7 +42,7 @@ LionSpace newLionSpace() {
 
         if (pointer != null()) {
             Id elemId = pointer.uid;
-            for(Language lang <- lionLanguages)
+            for(Language lang <- lionLanguages<1>)
                 visit(lang) {
                     // only concrete classes are possible here
                     // Question: is there a smarter way to do this using &T?
@@ -61,7 +63,19 @@ LionSpace newLionSpace() {
         return elements;
     }
 
-    return <add_, lookup_>;
+    tuple[IKeyed, Language] findType_(Id inLanguage, Id entityKey) {     
+        Language lang = lionLanguages[inLanguage];
+        IKeyed entity;
+        visit(lang) {
+            case e:LanguageEntity(_, key = entityKey): entity = IKeyed(e);
+            case e:Feature(_, key = entityKey): entity = IKeyed(e);
+            case e:EnumerationLiteral(key = entityKey): entity = IKeyed(e);
+        };
+
+        return <entity, lang>;
+    }
+
+    return <add_, lookup_, findType_>;
 }
 
 LionSpace defaultSpace(Language lang) {

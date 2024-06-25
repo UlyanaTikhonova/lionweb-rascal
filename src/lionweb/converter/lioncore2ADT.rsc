@@ -15,20 +15,29 @@ import String;
 
 list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"]; 
 
+map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaultSpace(lang)) {
+    map[Symbol, Production] langADT = ();
+    for(LanguageEntity entity <- lang.entities) {
+        tuple[Symbol symb, Production prod] entADT = entity2production(entity, lang, lionspace = lionspace);
+        langADT[entADT.symb] = entADT.prod;
+    };
+    return langADT;
+}
+
 // Abstract concept only wraps inheritance: choice over its extensions
-Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = true)), 
+tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cpt, abstract = true)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol cptADT = adt(cpt.name, []);
     set[Production] alts = {wrapInheritance(Classifier(cpt), cptADT, ext, lang, lionspace) | 
                                                 ext <- collectExtensions(Classifier(cpt), lang)};
-    return choice(cptADT, alts);
+    return <cptADT, choice(cptADT, alts)>;
 }
 
 // Not abstract concept has its own features and might be extended by other concepts
 // Features of a concept are added to parameters or keyword parameters, depending on whether its type
 // has a default value for it.
-Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = false)), 
+tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cpt, abstract = false)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol cptADT = adt(cpt.name, []);
@@ -41,16 +50,16 @@ Production entity2production(LanguageEntity(Classifier(Concept cpt, abstract = f
     set[Production] alts = {definition} + 
                 {wrapInheritance(Classifier(cpt), cptADT, ext, lang, lionspace) | 
                                                 ext <- collectExtensions(Classifier(cpt), lang)};
-    return choice(cptADT, alts);
+    return <cptADT, choice(cptADT, alts)>;
 }
 
 // Enumeration is a choice over its literals
-Production entity2production(LanguageEntity(DataType(Enumeration enum)), 
+tuple[Symbol, Production] entity2production(LanguageEntity(DataType(Enumeration enum)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol enumADT = adt(enum.name, []);
     set[Production] alts = {cons(label(el.name, enumADT), [], [], {}) | el <- enum.literals};
-    return choice(enumADT, alts);
+    return <enumADT, choice(enumADT, alts)>;
 }
 
 // TODO: entity2production for Interface and Annotation
@@ -67,6 +76,7 @@ Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child
 }
 
 str field(str x) = "\\<uncapitalize(x)>";
+// str field(str x) = "<uncapitalize(x)>";
 
 set[Classifier] collectExtensions(Classifier class, Language lang) {
     set[Classifier] extensions = {};
@@ -140,14 +150,15 @@ default Symbol type2symbol(LanguageEntity le)
     if (pointer != null()) {
         Id elemId = pointer.uid;
         visit(lang) {
+            // case &T e: elements += []; 
             // only concrete classes are possible here
             // Question: is there a smarter way to do this using &T?
-            case e:Concept(key = elemId): elements = elements + [Classifier(e)];
-            case e:Interface(key = elemId): elements = elements + [Classifier(e)];
-            case e:Annotation(key = elemId): elements = elements + [Classifier(e)];
-            case e:PrimitiveType(key = elemId):  elements = elements + [DataType(e)];
-            case e:Enumeration(key = elemId): elements = elements + [DataType(e)];
-            case e:Language(key = elemId): elements = elements + [e];
+            case e:Concept(key = elemId): elements += [Classifier(e)];
+            case e:Interface(key = elemId): elements += [Classifier(e)];
+            case e:Annotation(key = elemId): elements += [Classifier(e)];
+            case e:PrimitiveType(key = elemId):  elements += [DataType(e)];
+            case e:Enumeration(key = elemId): elements += [DataType(e)];
+            case e:Language(key = elemId): elements += [e];
         };
 
         // TODO: if not in this language, search only in the languages that this language depends on (now we look in the whole lion space)

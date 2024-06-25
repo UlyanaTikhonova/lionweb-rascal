@@ -1,8 +1,10 @@
 module lionweb::converter::lionjson
 
+import IO;
+import lang::json::IO;
 import lionweb::pointer;
 
-// alias Id = str;
+SerializationChunk loadLionJSON(loc jsonfile) = readJSON(#SerializationChunk, jsonfile);
 
 data SerializationChunk
     = SerializationChunk(str serializationFormatVersion = "", 
@@ -40,3 +42,6 @@ data MetaPointer
 data ReferenceTarget
     = ReferenceTarget(Id reference = "", str resolveInfo = "");
 
+test bool inOutTest(SerializationChunk x)
+  = parseJSON(#SerializationChunk, asJSON(x)) == x
+  when bprintln(x);

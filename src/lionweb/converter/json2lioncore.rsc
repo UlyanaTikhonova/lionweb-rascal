@@ -5,7 +5,7 @@ import lionweb::m3::lioncore;
 import lionweb::pointer;
 
 list[Language] jsonlang2lioncore(SerializationChunk json) {
-    langChunk = json;
+    // langChunk = json;
 
     // Lionweb built-in data types
     // Language lionBuiltinLanguage = Language(
