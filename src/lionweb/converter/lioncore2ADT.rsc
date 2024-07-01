@@ -13,7 +13,7 @@ import String;
  * Mapping Lion Core to Rascal ADT (Symbols and Productions) 
  */
 
-list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"]; 
+public list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"]; 
 
 map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaultSpace(lang)) {
     map[Symbol, Production] langADT = ();
@@ -37,6 +37,7 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cp
 // Not abstract concept has its own features and might be extended by other concepts
 // Features of a concept are added to parameters or keyword parameters, depending on whether its type
 // has a default value for it.
+// TODO: order parameters/fields that don't have default value 
 tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cpt, abstract = false)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
@@ -75,8 +76,8 @@ Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child
                 {\tag("subtype")});
 }
 
-str field(str x) = "\\<uncapitalize(x)>";
-// str field(str x) = "<uncapitalize(x)>";
+// str field(str x) = "\\<uncapitalize(x)>";
+str field(str x) = "<uncapitalize(x)>";
 
 set[Classifier] collectExtensions(Classifier class, Language lang) {
     set[Classifier] extensions = {};
@@ -97,6 +98,7 @@ set[Classifier] collectExtensions(Classifier class, Language lang) {
 // - Whether the feature has a default value depends on its type, so it is also calculated here.
 // Question: why is it not possible to pick up `optional` from a Feature directly (I have to unfold it into a Link and Property) 
 
+// TODO: the case of link should be split for Reference and Containment, to support referencing
 tuple[Symbol, bool] feature2parameter(Feature(Link l, optional = true), Language lang, LionSpace lionspace) {
     LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));    
     return <label(field(l.name), \list(type2symbol(featureType))), true>;
@@ -164,15 +166,15 @@ default Symbol type2symbol(LanguageEntity le)
         // TODO: if not in this language, search only in the languages that this language depends on (now we look in the whole lion space)
         if (size(elements) == 0) {
             println("lion space: <lionspace>");
-            &T elem = lionspace.lookup(pointer)[0];
+            IKeyed elem = lionspace.lookup(pointer)[0];
             println("Found the element: <elem>");
-            elements = elements + [elem];
+            elements = elements + [elem.languageentity.datatype];
         }
     }
     // TODO: validate that the found element is actually of type &T
 
-    // if (size(elements) == 0) throw "No element found for the pointer: <pointer>";
-    if (size(elements) == 0) elements = [DataType(PrimitiveType(name = "not found type"))];
+    if (size(elements) == 0) throw "No element found for the pointer: <pointer>";
+    // if (size(elements) == 0) elements = [DataType(PrimitiveType(name = "not found type"))];
     if (size(elements) > 1) throw "More than one element found for the pointer: <pointer>";
     
     return elements[0];

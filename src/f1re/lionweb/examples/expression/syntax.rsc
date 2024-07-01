@@ -4,24 +4,24 @@ extend lang::std::Whitespace;
 
 lexical IntegerLiteral = [0-9]+;
 
-start syntax ExpressionsFile
-    = {Expression ";"}* expressions;
+// start syntax ExpressionsFile
+//     = {Expression ";"}* expressions;
 
-syntax Expression
-    = Expression: Literal literal
-    | Expression: BinaryExpression binaryExpression;
-    //| "(" Expression ")"
+// syntax Expression
+//     = Expression: Literal literal
+//     | Expression: BinaryExpression binaryExpression;
+//     //| "(" Expression ")"
 
-syntax Literal
-    = Literal: IntegerLiteral value;
+// syntax Literal
+//     = Literal: IntegerLiteral value;
 
-syntax BinaryExpression
-    = left BinaryExpression: Expression leftOperand BinaryOperation operation Expression rightOperand;
+// syntax BinaryExpression
+//     = left BinaryExpression: Expression leftOperand BinaryOperation operation Expression rightOperand;
 
-syntax BinaryOperation
-    = plus: "+"
-    | mult: "*"
-    | minus: "-";
+// syntax BinaryOperation
+//     = plus: "+"
+//     | mult: "*"
+//     | minus: "-";
 
 /// 
 
@@ -37,7 +37,7 @@ syntax Expr
 
 
 ExpressionsFile file2lion((File)`<{Expr ";"}* es>`)
-  = ExpressionsFile([ expr2lion(e) | Expr e <- es ]);
+  = ExpressionsFile([expr2lion(e) | Expr e <- es ]);
 
 Expression expr2lion((Expr)`<Literal l>`)
   = Expression(Literal(\value=toInt("<l>")));

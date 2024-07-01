@@ -7,7 +7,10 @@ import lionweb::m3::lioncore;
 import lionweb::pointer;
 
 // Currently lookup searches for pointers in all registered languages (not models, and not scoped langs/models)
-alias LionSpace = tuple[void(Language) add, list[&T](Pointer[&T]) lookup, tuple[IKeyed, Language](Id, Id) findType];
+alias LionSpace = tuple[void(Language) add, 
+                        list[IKeyed](Pointer[&T]) lookup, 
+                        tuple[IKeyed, Language](Id, Id) findType,
+                        IKeyed(Id) findTypeInAll];
 
 LionSpace newLionSpace() {
     // Lioncore M3 language instance
@@ -36,9 +39,9 @@ LionSpace newLionSpace() {
     }
 
     // Question: I cannot use generic type &T as a return here: I get CallFailed exception. How to overcome this? With IKeyed?
-    list[&T] lookup_(Pointer[&T] pointer) {
+    list[IKeyed] lookup_(Pointer[&T] pointer) {
         println("In the lookup of lion space function");
-        list[&T] elements = [];
+        list[IKeyed] elements = [];
 
         if (pointer != null()) {
             Id elemId = pointer.uid;
@@ -46,12 +49,12 @@ LionSpace newLionSpace() {
                 visit(lang) {
                     // only concrete classes are possible here
                     // Question: is there a smarter way to do this using &T?
-                    case e:Concept(key = elemId): elements = elements + [Classifier(e)];
-                    case e:Interface(key = elemId): elements = elements + [Classifier(e)];
-                    case e:Annotation(key = elemId): elements = elements + [Classifier(e)];
-                    case e:PrimitiveType(key = elemId):  elements = elements + [DataType(e)];
-                    case e:Enumeration(key = elemId): elements = elements + [DataType(e)];
-                    case e:Language(key = elemId): elements = elements + [e];
+                    case e:Concept(key = elemId): elements += [IKeyed(LanguageEntity(Classifier(e)))];
+                    case e:Interface(key = elemId): elements +=  [IKeyed(LanguageEntity(Classifier(e)))];
+                    case e:Annotation(key = elemId): elements += [IKeyed(LanguageEntity(Classifier(e)))];
+                    case e:PrimitiveType(key = elemId):  elements += [IKeyed(LanguageEntity(DataType(e)))];
+                    case e:Enumeration(key = elemId): elements +=  [IKeyed(LanguageEntity(DataType(e)))];
+                    case e:Language(key = elemId): elements += [IKeyed(e)];
                 };
         }
         // TODO: validate that the found element is actually of type &T
@@ -75,7 +78,18 @@ LionSpace newLionSpace() {
         return <entity, lang>;
     }
 
-    return <add_, lookup_, findType_>;
+    IKeyed findTypeInAll_(Id entityKey) {
+        IKeyed entity;
+        for(Language lang <- lionLanguages<1>)
+            visit(lang) {
+                case e:LanguageEntity(_, key = entityKey): entity = IKeyed(e);
+                case e:Feature(_, key = entityKey): entity = IKeyed(e);
+                case e:EnumerationLiteral(key = entityKey): entity = IKeyed(e);
+            }
+        return entity;    
+    }
+
+    return <add_, lookup_, findType_, findTypeInAll_>;
 }
 
 LionSpace defaultSpace(Language lang) {

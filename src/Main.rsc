@@ -37,7 +37,8 @@ int main(int testArgument=0) {
 
     // Dynamically instantiate model from the lionjson using newly generated ADT
     SerializationChunk instanceChunk = loadLionJSON(|project://lionweb-rascal/input/ExprInstanceLW.json|);
-    list[value] model = jsonlang2model(instanceChunk, lionspace, langADT);
+    map[str, value] model = jsonlang2model(instanceChunk, lionspace, langADT);
+    println(prettyNode(model["1109945625693563396"]));
 
     // back-up
     // start[JSONText] jsonTree = parse(#start[JSONText], |project://lionweb-rascal/input/ExprLanguageLW.json|);
