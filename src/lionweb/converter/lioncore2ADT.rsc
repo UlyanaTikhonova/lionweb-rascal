@@ -4,9 +4,7 @@ import lionweb::m3::lioncore;
 import lionweb::pointer;
 import lionweb::m3::lionspace;
 
-import IO;
 import Type;
-import List;
 import String;
 
 /* 
@@ -76,7 +74,6 @@ Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child
                 {\tag("subtype")});
 }
 
-// str field(str x) = "\\<uncapitalize(x)>";
 str field(str x) = "<uncapitalize(x)>";
 
 set[Classifier] collectExtensions(Classifier class, Language lang) {
@@ -100,32 +97,32 @@ set[Classifier] collectExtensions(Classifier class, Language lang) {
 
 // TODO: the case of link should be split for Reference and Containment, to support referencing
 tuple[Symbol, bool] feature2parameter(Feature(Link l, optional = true), Language lang, LionSpace lionspace) {
-    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));    
+    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);    
     return <label(field(l.name), \list(type2symbol(featureType))), true>;
 }
 
 tuple[Symbol, bool] feature2parameter(Feature(Link l, optional = false), Language lang, LionSpace lionspace) {
-    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));
+    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);
     return <label(field(l.name), type2symbol(featureType)), false>;
 }
 
 tuple[Symbol, bool] feature2parameter(Feature(l:Link(_, multiple = true)), Language lang, LionSpace lionspace)  {
-    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));
+    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);
     return <label(field(l.name), \list(type2symbol(featureType))), true>;
 } 
 
 tuple[Symbol, bool] feature2parameter(Feature(l:Link(_, optional = true, multiple = true)), Language lang, LionSpace lionspace)  {
-    LanguageEntity featureType = LanguageEntity(findReferencedElement(l.\type, lang, lionspace));
+    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);
     return <label(field(l.name), \list(type2symbol(featureType))), true>;
 }
 
 tuple[Symbol, bool] feature2parameter(Feature(Property p, optional = false), Language lang, LionSpace lionspace)  {
-    LanguageEntity featureType = LanguageEntity(findReferencedElement(p.\type, lang, lionspace));
+    LanguageEntity featureType = findReferencedElement(p.\type, lang, lionspace);
     return <label(field(p.name), type2symbol(featureType)), featureType.name in BUILTIN_TYPES>;
 } 
 
 tuple[Symbol, bool] feature2parameter(Feature(Property p, optional = true), Language lang, LionSpace lionspace) {
-    LanguageEntity featureType = LanguageEntity(findReferencedElement(p.\type, lang, lionspace));
+    LanguageEntity featureType = findReferencedElement(p.\type, lang, lionspace);
     return <label(field(p.name), \list(type2symbol(featureType))), true>;
 }
 
@@ -146,38 +143,6 @@ default Symbol type2symbol(LanguageEntity le)
     = adt(le.name, []);
 
 // Find the referenced type or the used language 
-&T findReferencedElement(Pointer[&T] pointer, Language lang, LionSpace lionspace) {
-    list[&T] elements = [];
+LanguageEntity findReferencedElement(Pointer[&T] pointer, Language lang, LionSpace lionspace) 
+    = lionspace.lookupInScope(pointer, lang).languageentity;
 
-    if (pointer != null()) {
-        Id elemId = pointer.uid;
-        visit(lang) {
-            // case &T e: elements += []; 
-            // only concrete classes are possible here
-            // Question: is there a smarter way to do this using &T?
-            case e:Concept(key = elemId): elements += [Classifier(e)];
-            case e:Interface(key = elemId): elements += [Classifier(e)];
-            case e:Annotation(key = elemId): elements += [Classifier(e)];
-            case e:PrimitiveType(key = elemId):  elements += [DataType(e)];
-            case e:Enumeration(key = elemId): elements += [DataType(e)];
-            case e:Language(key = elemId): elements += [e];
-        };
-
-        // TODO: if not in this language, search only in the languages that this language depends on (now we look in the whole lion space)
-        if (size(elements) == 0) {
-            println("lion space: <lionspace>");
-            IKeyed elem = lionspace.lookup(pointer)[0];
-            println("Found the element: <elem>");
-            elements = elements + [elem.languageentity.datatype];
-        }
-    }
-    // TODO: validate that the found element is actually of type &T
-
-    if (size(elements) == 0) throw "No element found for the pointer: <pointer>";
-    // if (size(elements) == 0) elements = [DataType(PrimitiveType(name = "not found type"))];
-    if (size(elements) > 1) throw "More than one element found for the pointer: <pointer>";
-    
-    return elements[0];
-}
-
-// -------------------------------- Tests -------------------------------------------------------------

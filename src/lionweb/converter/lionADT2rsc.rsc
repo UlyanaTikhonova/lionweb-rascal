@@ -51,12 +51,12 @@ str alternative2rsc(cons(label(str c, _), [label(str x, adt(str sub, []))], [*su
   = "<c>(<intercalate("\n      , ", args)>)"
   when field(sub) == x,
     args := [
-      "<sub> <x>",
+      "<sub> \\<x>",
       *[ default4sub(s, x) | s <- subs ]
     ];
 
 str default4sub(label(str fld, Symbol s), str kid)
-  = "<symbol2rsc(s)> <fld> = <kid>.<fld>";
+  = "<symbol2rsc(s)> \\<fld> = <kid>.<fld>";
 
 // The default case of the classifier (itself)
 default str alternative2rsc(cons(label(str c, _), list[Symbol] ps, list[Symbol] kws, _))
@@ -64,9 +64,9 @@ default str alternative2rsc(cons(label(str c, _), list[Symbol] ps, list[Symbol] 
   when
     list[str] args := [ param2rsc(p) | p <- ps ] + [ keywordparam2rsc(k) | k <- kws ];
     
-str param2rsc(label(str name, Symbol s)) = "<symbol2rsc(s)> <name>";
+str param2rsc(label(str name, Symbol s)) = "<symbol2rsc(s)> \\<name>";
 
-str keywordparam2rsc(label(str name, Symbol s)) = "<symbol2rsc(s)> <name> = <default4symbol(s)>";
+str keywordparam2rsc(label(str name, Symbol s)) = "<symbol2rsc(s)> \\<name> = <default4symbol(s)>";
 
 str symbol2rsc(\int()) = "int";
 
@@ -82,7 +82,7 @@ str symbol2rsc(\list(Symbol s)) = "list[<symbol2rsc(s)>]";
 
 str symbol2rsc(\tuple(list[Symbol] ss)) = "tuple[<intercalate(", ", [ symbol2rsc(s) | s <- ss])>]";
 
-str symbol2rsc(label(str n, Symbol s)) = "<symbol2rsc(s)> <n>";
+str symbol2rsc(label(str n, Symbol s)) = "<symbol2rsc(s)> \\<n>";
 
 str symbol2rsc(adt(str n, list[Symbol] ps)) 
   = "<qualify(n)><ps != [] ? "[" + intercalate(", ", [ symbol2rsc(p) | p <- ps ]) + "]" : "">";

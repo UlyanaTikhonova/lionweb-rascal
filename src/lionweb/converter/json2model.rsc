@@ -3,7 +3,6 @@ module lionweb::converter::json2model
 import Type;
 import IO;
 import String;
-import Map;
 import List;
 
 import lionweb::pointer;
@@ -12,13 +11,17 @@ import lionweb::converter::lioncore2ADT;
 import lionweb::m3::lioncore;
 import lionweb::m3::lionspace;
 
-// TODO: Where to store langADT? Should it be in the lionspace too?
+// The language ADT doesn't need to be stored, it can be fetched from the generated type: #ADT.definitions
 map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map[Symbol, Production] langADT) {
     map[Id, value] builtNodes = ();
+    // list[Language] langs = [lionspace.lookup(Pointer(l.key)).language | l <- json.languages];
 
-    value lion2value(IKeyed(LanguageEntity(Classifier(Concept cpt, abstract = false))),
-                        Language lang,
-                        lionweb::converter::lionjson::Node modelNode) {
+    // Only lioncore classifiers are serialized as json nodes
+    value classifier2value(lionweb::converter::lionjson::Node modelNode) {
+        IKeyed nodeType = lionspace.findInScope(modelNode.classifier.language, modelNode.classifier.key);
+        Concept cpt = nodeType.languageentity.classifier.concept;
+        if(cpt.abstract) throw "Cannot instantiate abstract concept";
+
         // Get the rascal (ADT) type of the lion language entity
         Symbol cptADT = adt(cpt.name, []);
         Production prod = langADT[cptADT];
@@ -30,9 +33,10 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
 
         for(Feature feature <- cpt.features) {
             println("Get the value for the feature: <feature.name>");
-            value featureValue = getFeatureValue(feature, lang, modelNode);
+            value featureValue = getFeatureValue(feature, modelNode);
             println("     the value for the feature is: <featureValue>");
-            // determine to which list of parameters this one belongs
+            // determine to which list of parameters this one belongs, by invoking functions from the lion-to-ADT tranformation
+            Language lang = lionspace.lookup(Pointer(modelNode.classifier.language)).language; // this is temporally needed
             tuple[Symbol smbl, bool hasDefault] child = feature2parameter(feature, lang, lionspace);
             if (child.hasDefault) {
                 keywordParamValues[field(feature.name)] = featureValue;
@@ -44,48 +48,51 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         println("Constructed parameters: <paramValues>");
         println("Constructed keyword parameters: <keywordParamValues>");
         // Instantiate the type with the values
-        return make(cptType, cpt.name, paramValues, keywordParamValues);
+        value cptValue =  make(cptType, cpt.name, paramValues, keywordParamValues);
+
+        return cptValue;
     };
 
-    value property2value(IKeyed(LanguageEntity(DataType dataType)), Language lang,
-                        str propertyValue) {
+    value property2value(IKeyed(LanguageEntity(DataType dataType)),
+                        lionweb::converter::lionjson::Property jsonProperty) {
         if (dataType.name in lionweb::converter::lioncore2ADT::BUILTIN_TYPES) {
             switch (dataType.name) {
-                case "Integer": return toInt(propertyValue);
-                case "String": return propertyValue;
-                case "Boolean": return propertyValue == "true";
+                case "Integer": return toInt(jsonProperty.\value);
+                case "String": return jsonProperty.\value;
+                case "Boolean": return jsonProperty.\value == "true";
             }
         };
+
         // If not a built-in type then get the rascal (ADT) type of the lion language entity
         Symbol datatypeADT = adt(dataType.name, []);
         Production prod = langADT[datatypeADT];
         type[value] datatypeType = type(datatypeADT, (datatypeADT : prod));
 
         // Find the name of the constructor using the key in the child value
-        tuple[IKeyed ikeyed, Language lang] enumLiteral = lionspace.findType(lang.key, propertyValue);
-        if (IKeyed(EnumerationLiteral el) := enumLiteral.ikeyed) {
+        IKeyed enumLiteral = lionspace.findInScope(jsonProperty.property.language, jsonProperty.\value);
+        if (IKeyed(EnumerationLiteral el) := enumLiteral) {
             return make(datatypeType, el.name, [], ());
         };
 
-        return 20000;
+        return "Error in proprty2value";
     };
 
     // For property - also find the proper ADT by its key, and add default conversions for the built-in types
-    value getFeatureValue(Feature(Property propertyFeature), Language lang,
+    value getFeatureValue(Feature(Property propertyFeature),
                             lionweb::converter::lionjson::Node parentNode) {
         value childValue;   // In our json of the instance model we miss operation property!!
         
         // search for the corresponding property in the json node
         for(lionweb::converter::lionjson::Property jsonProperty <- parentNode.properties) {
             if(jsonProperty.property.key == propertyFeature.key) {
-                println("Search the lion type for the property: <jsonProperty>");
-                tuple[IKeyed ikeyed, Language lang] lionProperty = lionspace.findType(jsonProperty.property.language, jsonProperty.property.key);
-                if (IKeyed(Feature(Property lp)) := lionProperty.ikeyed) {
-                    println("Search the lion type for the property: <lp.\type.uid>");
-                    IKeyed childType = lionspace.findTypeInAll(lp.\type.uid); // TODO: refactor this!!
+                println("Search the lion property type: <jsonProperty>");
+                IKeyed lionProperty = lionspace.findInScope(jsonProperty.property.language, jsonProperty.property.key);
+                if (IKeyed(Feature(Property lp)) := lionProperty) {
+                    println("Search the lion type of this property: <lp.\type.uid>");
+                    IKeyed childType = lionspace.findInScope(jsonProperty.property.language, lp.\type.uid); // TODO: refactor this!!
                     // this is the key for the not-built-in types
                     println("Invoke property2value for the node: <jsonProperty>");
-                    childValue = property2value(childType, lang, jsonProperty.\value);
+                    childValue = property2value(childType, jsonProperty);
                     break;
                 };                
             };
@@ -97,7 +104,7 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         return childValue;
     }
 
-    value getFeatureValue(Feature(Link(Containment containmentFeature)), Language lang,
+    value getFeatureValue(Feature(Link(Containment containmentFeature)),
                             lionweb::converter::lionjson::Node parentNode) {
         list[Id] jsonChildren = [];
         // search for the corresponding containment in the json node
@@ -111,14 +118,14 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         list[value] childValues = [];
         for(Id childId <- jsonChildren) {
             if (!(childId in builtNodes)) {
-                lionweb::converter::lionjson::Node childnode = getJsonNode(childId);
-                tuple[IKeyed ikeyed, Language lang] childType = lionspace.findType(childnode.classifier.language, childnode.classifier.key);
-                println("Invoke lion2value for the node: <childnode>");
-                value childValue = lion2value(childType.ikeyed, lang, childnode);
+                lionweb::converter::lionjson::Node childnode = getJsonNode(childId);                
+                value childValue = classifier2value(childnode);
                 // The original feature type (parameter) might be an inherited type of the declared feature type (argument)
                 // then we need to wrap it into the chain of the corresponding constructors.
                 println("Wrap inheritance for <childValue>");
-                childValue = wrapInheritance(childValue, childType.ikeyed, lionspace.lookup(containmentFeature.\type)[0]);
+                childValue = wrapInheritance(childValue, 
+                                            lionspace.findInScope(childnode.classifier.language, childnode.classifier.key), 
+                                            lionspace.lookup(containmentFeature.\type));
                 // ... store the resulting value in the built nodes
                 builtNodes[childId] = childValue;
             };
@@ -134,6 +141,8 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
     // TODO: add getFeatureValue for the reference
 
     // TODO: generalize the following for interface and annotation
+    // TODO: change from delta child-parent to every next layer of extension
+    // TODO: add transformation for built-in concept types (Node and INamed)
     value wrapInheritance(value childValue, 
                             IKeyed(LanguageEntity(Classifier(Concept childType))),  
                             IKeyed(LanguageEntity(Classifier(Concept parentType)))) {
@@ -142,7 +151,7 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
 
         // Construct one layer of extension and wrap again
         // (concept can extend only one another concept)
-        IKeyed extendedType = lionspace.lookup(childType.extends[0])[0];
+        IKeyed extendedType = lionspace.lookup(childType.extends[0]);
         Symbol cptADT = adt(extendedType.name, []);
         Production prod = langADT[cptADT];
         type[value] cptType = type(cptADT, (cptADT : prod));
@@ -170,11 +179,8 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
     // mixture of recursion (depth-first) and traversing the list of nodes => we store the visited nodes in the list
     for(Node jsonnode <- json.nodes) {
         if (!(jsonnode.id in builtNodes)) {
-            tuple[IKeyed ikeyed, Language lang] nodeType = lionspace.findType(jsonnode.classifier.language, jsonnode.classifier.key);
-            // check what we get here?
-            println(nodeType.ikeyed);
-            value nodeValue = lion2value(nodeType.ikeyed, nodeType.lang, jsonnode);
-            println(nodeValue);
+            value nodeValue = classifier2value(jsonnode);
+            println("Build the node value: <nodeValue>");
             builtNodes[jsonnode.id] = nodeValue;
         };
     };
@@ -182,30 +188,6 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
     return builtNodes;
 }
 
-/*
-value lion22value(IKeyed(LanguageEntity(Classifier(Concept cpt, abstract = false, name="Literal"))), 
-                    Language lang, LionSpace lionspace, map[Symbol, Production] langADT, 
-                    lionweb::converter::lionjson::Node modelNode) {
-    Symbol cptADT = adt(cpt.name, []);
-    // type[&T<:node] cptType = type(cptADT, (cptADT : entity2production(LanguageEntity(Classifier(cpt)), lang, lionspace)));
-    // Production prod = entity2production(LanguageEntity(Classifier(cpt)), lang); //, lionspace);
-    // Production prod = choice(adt("Literal",[]),{cons(label("Literal",adt("Literal",[])),[], [label("\\value",int())], {})});
-    Production prod = langADT[cptADT];
-    println("production: <prod>");
-    type[value] cptType = type(cptADT, (cptADT : prod));
-    println("type: <cptType>");
-    paramValues = [];
-    keywordParamValues = ( "<f.name>": 0 | f <- cpt.features);
-    // Below we might need an actual list of definitions for this symbol (its productions), 
-    // we get them using functions from lioncore2ADT
-    // Or: the question is will #(plain_name) work? how will it find the concrete Expression type?
-    return make(cptType, cpt.name, paramValues, keywordParamValues);
-}
-
-
-default value lion2value(IKeyed _, Language lang, LionSpace lionspace, map[Symbol, Production] langADT, lionweb::converter::lionjson::Node modelNode) {
-    return "not supported yet";
-}*/
 
 // &T<:node lion2value(type[&T<:node] langType, str constructorName, 
 //                     list[value] paramValues, map[str, value] keywordParamValues) {
