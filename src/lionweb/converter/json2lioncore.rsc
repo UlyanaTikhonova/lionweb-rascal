@@ -5,17 +5,6 @@ import lionweb::m3::lioncore;
 import lionweb::pointer;
 
 list[Language] jsonlang2lioncore(SerializationChunk json) {
-    // langChunk = json;
-
-    // Lionweb built-in data types
-    // Language lionBuiltinLanguage = Language(
-    //         name = "Built-in DataTypes", 
-    //         key = "LionCore-builtins", 
-    //         version = "2023.1",
-    //         entities = [LanguageEntity(DataType(PrimitiveType(name = "String", key = "LionCore-builtins-String"))),
-    //                     LanguageEntity(DataType(PrimitiveType(name = "Boolean", key = "LionCore-builtins-Boolean"))),
-    //                     LanguageEntity(DataType(PrimitiveType(name = "Integer", key = "LionCore-builtins-Integer")))]);
-
     list[Language] langs = [];
     for(Node langnode <- [n | Node n <- json.nodes, n.classifier.key == "Language"]) {
         langs = langs + lionweb::m3::lioncore::Language(

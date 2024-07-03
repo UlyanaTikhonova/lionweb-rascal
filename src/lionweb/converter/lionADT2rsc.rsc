@@ -19,6 +19,7 @@ void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT)
                 '// Date: <now()>
                 '
                 'import DateTime;
+                'import lionweb::pointer;
                 '
                 '<lion2rsc(lionlang, langADT)>");
 
@@ -56,7 +57,7 @@ str alternative2rsc(cons(label(str c, _), [label(str x, adt(str sub, []))], [*su
     ];
 
 str default4sub(label(str fld, Symbol s), str kid)
-  = "<symbol2rsc(s)> \\<fld> = <kid>.<fld>";
+  = "<symbol2rsc(s)> \\<fld> = <kid>.\\<fld>";
 
 // The default case of the classifier (itself)
 default str alternative2rsc(cons(label(str c, _), list[Symbol] ps, list[Symbol] kws, _))
@@ -87,11 +88,11 @@ str symbol2rsc(label(str n, Symbol s)) = "<symbol2rsc(s)> \\<n>";
 str symbol2rsc(adt(str n, list[Symbol] ps)) 
   = "<qualify(n)><ps != [] ? "[" + intercalate(", ", [ symbol2rsc(p) | p <- ps ]) + "]" : "">";
   
-str qualify("Maybe") = "util::Maybe::Maybe";
+// str qualify("Maybe") = "util::Maybe::Maybe";
   
-str qualify("Ref") = "lang::ecore::Refs::Ref";
+str qualify("Pointer") = "lionweb::pointer::Pointer";
 
-str qualify("Id") = "lang::ecore::Refs::Id";
+str qualify("Id") = "lionweb::pointer::Id";
   
 default str qualify(str x) = x;
   
@@ -112,14 +113,14 @@ str default4symbol(\label(str _, Symbol s)) = default4symbol(s);
 str default4symbol(\tuple(list[Symbol] ss)) 
   = "\<<intercalate(", ", [ default4symbol(s) | s <- ss])>\>";
 
-str default4symbol(adt("Ref", list[Symbol] ps)) 
+str default4symbol(adt("Pointer", list[Symbol] ps)) 
   = "null()";
 
 str default4symbol(adt("Id", list[Symbol] ps)) 
-  = "noId()";
+  = "\"\"";
 
-str default4symbol(adt("Maybe", list[Symbol] ps)) 
-  = "nothing()";
+// str default4symbol(adt("Maybe", list[Symbol] ps)) 
+//   = "nothing()";
 
 // default for enumeration
 // we need to find the production that 

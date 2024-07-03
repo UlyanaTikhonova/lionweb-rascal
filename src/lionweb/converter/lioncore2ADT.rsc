@@ -43,7 +43,7 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cp
     list[tuple[Symbol, bool]] entityParameters = [feature2parameter(f, lang, lionspace) | f <- cpt.features];
     Production definition = cons(label(cpt.name, cptADT),
                                  [param | <param, hasDefault> <- entityParameters, hasDefault == false],
-                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true], 
+                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true] + [identifierField()], 
                                  {});
 
     set[Production] alts = {definition} + 
@@ -70,11 +70,9 @@ Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child
     list[tuple[Symbol, bool]] childParameters = [feature2parameter(f, lang, lionspace) | f <- child.features];
     return cons(label(parent.name, parentADT), 
                 [label(field(child.name), adt(child.name, []))],
-                [param | <param, _> <- childParameters],  
+                [param | <param, _> <- childParameters] + [identifierField()],  
                 {\tag("subtype")});
 }
-
-str field(str x) = "<uncapitalize(x)>";
 
 set[Classifier] collectExtensions(Classifier class, Language lang) {
     set[Classifier] extensions = {};
@@ -89,6 +87,16 @@ set[Classifier] collectExtensions(Classifier class, Language lang) {
     return extensions;
 }
 
+str field(str x) = "<uncapitalize(x)>";
+
+// Referencing in lionweb Rascal:
+Symbol identifierField()
+    = label("uid", adt("Id", []));
+
+// type parameter here corresponds to the type of the referenced entity
+Symbol referenceType(Symbol refTypeAdt)
+    = \adt("Pointer", [refTypeAdt]);
+
 // Unfold features into parameters of the constructor
 // - An optional feature is represented by rascal list (default = []).
 // - A multiple link is represented by a rascal list too (default = []).
@@ -96,24 +104,21 @@ set[Classifier] collectExtensions(Classifier class, Language lang) {
 // Question: why is it not possible to pick up `optional` from a Feature directly (I have to unfold it into a Link and Property) 
 
 // TODO: the case of link should be split for Reference and Containment, to support referencing
-tuple[Symbol, bool] feature2parameter(Feature(Link l, optional = true), Language lang, LionSpace lionspace) {
-    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);    
-    return <label(field(l.name), \list(type2symbol(featureType))), true>;
+tuple[Symbol, bool] feature2parameter(Feature(Link(Containment containmnt)), Language lang, LionSpace lionspace) {
+    LanguageEntity featureType = findReferencedElement(containmnt.\type, lang, lionspace);
+    if (containmnt.optional || containmnt.multiple)  
+        return <label(field(containmnt.name), \list(type2symbol(featureType))), true>;
+    else 
+        return <label(field(containmnt.name), type2symbol(featureType)), false>;
 }
 
-tuple[Symbol, bool] feature2parameter(Feature(Link l, optional = false), Language lang, LionSpace lionspace) {
-    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);
-    return <label(field(l.name), type2symbol(featureType)), false>;
-}
-
-tuple[Symbol, bool] feature2parameter(Feature(l:Link(_, multiple = true)), Language lang, LionSpace lionspace)  {
-    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);
-    return <label(field(l.name), \list(type2symbol(featureType))), true>;
-} 
-
-tuple[Symbol, bool] feature2parameter(Feature(l:Link(_, optional = true, multiple = true)), Language lang, LionSpace lionspace)  {
-    LanguageEntity featureType = findReferencedElement(l.\type, lang, lionspace);
-    return <label(field(l.name), \list(type2symbol(featureType))), true>;
+tuple[Symbol, bool] feature2parameter(Feature(Link(Reference ref)), Language lang, LionSpace lionspace) {
+    LanguageEntity featureType = findReferencedElement(ref.\type, lang, lionspace);
+    Symbol refTypeAdt = type2symbol(featureType);
+    if (ref.optional || ref.multiple)  
+        return <label(field(ref.name), \list(referenceType(refTypeAdt))), true>;
+    else 
+        return <label(field(ref.name), referenceType(refTypeAdt)), false>;
 }
 
 tuple[Symbol, bool] feature2parameter(Feature(Property p, optional = false), Language lang, LionSpace lionspace)  {

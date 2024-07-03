@@ -24,7 +24,7 @@ int main(int testArgument=0) {
     // SerializationChunk instanceChunk = readJSON(#SerializationChunk, |project://lionweb-rascal/input/ExprInstanceLW.json|);
     // println(prettyNode(instanceChunk));
 
-    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW.json|);
+    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW_2.json|);
     LionSpace lionspace = addLangsToLionspace(lionlangs);
     
     // Convert lionjson AST into lioncore AST 
@@ -35,10 +35,13 @@ int main(int testArgument=0) {
     println(domain(langADT));
     writeLionADTModule(lionlangs[0], langADT);
 
+    println("Instantiating an M1 model...");
     // Dynamically instantiate model from the lionjson using newly generated ADT
-    SerializationChunk instanceChunk = loadLionJSON(|project://lionweb-rascal/input/ExprInstanceLW.json|);
-    map[str, value] model = jsonlang2model(instanceChunk, lionspace, langADT);
-    println(prettyNode(model["1109945625693563396"]));
+    SerializationChunk instanceChunk = loadLionJSON(|project://lionweb-rascal/input/ExprInstanceLW_2.json|);
+    map[str, value] model = jsonlang2model(instanceChunk, lionspace, langADT);    
+    for(value val <- [v | <_, v> <- toList(model)])
+        println(prettyNode(val));
+    // println(prettyNode(model["1109945625693563396"]));
 
     // back-up
     // start[JSONText] jsonTree = parse(#start[JSONText], |project://lionweb-rascal/input/ExprLanguageLW.json|);

@@ -63,7 +63,6 @@ LionSpace newLionSpace() {
         if (size(elements) == 0) throw "No element found for the pointer: <pointer>";
         if (size(elements) > 1) throw "More than one element found for the pointer: <pointer>";
         
-        println("Found the element <elements[0]> referenced by the pointer <pointer>");
         return elements[0];
     }
 
@@ -89,7 +88,6 @@ LionSpace newLionSpace() {
         if (size(elements) == 0) throw "No element found for the pointer: <pointer>";
         if (size(elements) > 1) throw "More than one element found for the pointer: <pointer>";
         
-        println("Found the element <elements[0]> referenced by the pointer <pointer> in the scope <scope.name>");
         return elements[0];
     }
 
@@ -111,7 +109,6 @@ LionSpace newLionSpace() {
         if (size(elements) == 0) throw "No element found for the key: <elementKey>";
         if (size(elements) > 1) throw "More than one element found for the key: <elementKey>";
 
-        println("Found the element <elements[0]> referenced by the key <elementKey>");
         return elements[0];
     }
 

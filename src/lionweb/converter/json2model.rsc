@@ -43,7 +43,9 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
             } else {
                 paramValues += featureValue; // here the order might be wrong!!!
             };
-        };        
+        };
+        // Add unique identifier to the build concept, equal to the id of the json node
+        keywordParamValues["uid"] = modelNode.id;
         
         println("Constructed parameters: <paramValues>");
         println("Constructed keyword parameters: <keywordParamValues>");
@@ -53,6 +55,7 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         return cptValue;
     };
 
+    // Lioncore properties are serialized as json properties
     value property2value(IKeyed(LanguageEntity(DataType dataType)),
                         lionweb::converter::lionjson::Property jsonProperty) {
         if (dataType.name in lionweb::converter::lioncore2ADT::BUILTIN_TYPES) {
@@ -97,8 +100,6 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
                 };                
             };
         };
-        // convert string into the type of the feature
-        // Question: how?? we need to parse here or so? --> looks like a generator of a translator is needed for these cases
         if (propertyFeature.optional == true)
             return [childValue];
         return childValue;
@@ -133,15 +134,35 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         }; 
 
         // if the feature is multiple or optional - return list
-        if (containmentFeature.multiple == true || containmentFeature.optional == true)
+        if (containmentFeature.multiple || containmentFeature.optional)
             return childValues;                
         return childValues[0];
     }
 
-    // TODO: add getFeatureValue for the reference
+    value getFeatureValue(Feature(Link(Reference referenceFeature)),
+                            lionweb::converter::lionjson::Node parentNode) {
+        list[lionweb::converter::lionjson::ReferenceTarget] jsonChildren = [];
+        // search for the corresponding reference in the json node
+        for(jsonReference <- parentNode.references) {
+            if(jsonReference.reference.key == referenceFeature.key) {
+                jsonChildren = jsonReference.targets;
+                break;
+            };
+        };
+        // Construct pointers using the ids of the referenced nodes
+        list[value] childValues = [];    
+        for(lionweb::converter::lionjson::ReferenceTarget refTarget <- jsonChildren) {
+            childValues += lionweb::pointer::Pointer(refTarget.reference);
+            // resolve info is not used yet
+        };
+
+         // if the feature is multiple or optional - return list
+        if (referenceFeature.multiple || referenceFeature.optional)
+            return childValues;                
+        return childValues[0];
+    }
 
     // TODO: generalize the following for interface and annotation
-    // TODO: change from delta child-parent to every next layer of extension
     // TODO: add transformation for built-in concept types (Node and INamed)
     value wrapInheritance(value childValue, 
                             IKeyed(LanguageEntity(Classifier(Concept childType))),  
