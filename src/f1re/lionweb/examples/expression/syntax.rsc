@@ -3,6 +3,7 @@ module f1re::lionweb::examples::expression::\syntax
 extend lang::std::Whitespace;
 
 lexical IntegerLiteral = [0-9]+;
+lexical Id = [a-z][a-z0-9]* !>> [a-z0-9];
 
 // start syntax ExpressionsFile
 //     = {Expression ";"}* expressions;
@@ -25,28 +26,24 @@ lexical IntegerLiteral = [0-9]+;
 
 /// 
 
-syntax File = {Expr ";"}*;
+start syntax File = contents: {Stmnt ";"}* statements;
+
+syntax Stmnt
+  = expression: Expr 
+  | varDefinition: Def;
+
+syntax Def 
+  = definition: Id name "=" Expr;
 
 syntax Expr
-  = Literal
-  | left Expr "*" Expr
+  = literal: Literal
+  | varRef: Id varName
+  | left mult: Expr lhs "*" Expr rhs
   > left 
-  (Expr "+" Expr 
-   Expr "-" Expr)
+  ( add: Expr lhs "+" Expr rhs
+  | sub: Expr lhs "-" Expr rhs)
+  | bracket "(" Expr ")"
   ;
 
-
-ExpressionsFile file2lion((File)`<{Expr ";"}* es>`)
-  = ExpressionsFile([expr2lion(e) | Expr e <- es ]);
-
-Expression expr2lion((Expr)`<Literal l>`)
-  = Expression(Literal(\value=toInt("<l>")));
-
-Expression expr2lion((Expr)`<Expr lhs> * <Expr rhs>`)
-  = Expression(BinaryExpression(mult(), expr2lion(lhs), expr2lion(rhs)));
-
-Expression expr2lion((Expr)`<Expr lhs> + <Expr rhs>`)
-  = Expression(BinaryExpression(plus(), expr2lion(lhs), expr2lion(rhs)));
-
-Expression expr2lion((Expr)`<Expr lhs> - <Expr rhs>`)
-  = Expression(BinaryExpression(minus(), expr2lion(lhs), expr2lion(rhs)));
+syntax Literal
+  = IntegerLiteral;
