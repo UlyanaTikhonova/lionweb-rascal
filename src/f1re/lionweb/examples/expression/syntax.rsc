@@ -1,9 +1,9 @@
 module f1re::lionweb::examples::expression::\syntax
 
-extend lang::std::Whitespace;
+extend lang::std::Layout;
 
 lexical IntegerLiteral = [0-9]+;
-lexical Id = [a-z][a-z0-9]* !>> [a-z0-9];
+lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
 
 // start syntax ExpressionsFile
 //     = {Expression ";"}* expressions;
@@ -33,11 +33,11 @@ syntax Stmnt
   | varDefinition: Def;
 
 syntax Def 
-  = definition: Id name "=" Expr;
+  = definition: Identifier name "=" Expr;
 
 syntax Expr
   = literal: Literal
-  | varRef: Id varName
+  | varRef: Identifier varName
   | left mult: Expr lhs "*" Expr rhs
   > left 
   ( add: Expr lhs "+" Expr rhs

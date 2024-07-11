@@ -1,6 +1,11 @@
 module f1re::lionweb::examples::expression::translators
 
+import IO;
 import String;
+import List;
+import ParseTree;
+
+import lionweb::pointer;
 
 import f1re::lionweb::examples::expression::\syntax;
 import f1re::lionweb::examples::expression::\lang;
@@ -10,15 +15,15 @@ ExpressionsFile file2lion((File)`<{Stmnt ";"}* statememnts>`)
   = ExpressionsFile(expressions = [expr2adt(e) | (Stmnt)`<Expr e>` <- statememnts], 
                     definitions = [expr2adt(d) | (Stmnt)`<Def d>` <- statememnts]);
 
-VariableDefinition expr2adt((Def)`<Id name> = <Expr val>`)
+VariableDefinition expr2adt((Def)`<Identifier name> = <Expr val>`)
   = VariableDefinition(varName = "<name>", varValue = [expr2adt(val)]);
 
 Expression expr2adt((Expr)`<Literal l>`)
   = Expression(f1re::lionweb::examples::expression::\lang::Literal(\value=toInt("<l>")));
 
 // TODO: here we should do an actual resolving and use the generated uid of the nodes
-Expression expr2adt((Expr)`<Id varName>`)
-  = Expression(VarReference(ref=lionweb::pointer::Pointer("<name>")));    // here we should be using loockup in the tree and uid of the found node!
+Expression expr2adt((Expr)`<Identifier varName>`)
+  = Expression(VarReference(lionweb::pointer::Pointer("<varName>")));    // here we should be using loockup in the tree and uid of the found node!
 
 Expression expr2adt((Expr)`(<Expr e>)`)
   = expr2adt(e);
@@ -35,27 +40,45 @@ Expression expr2adt((Expr)`<Expr lhs> - <Expr rhs>`)
 
 // Translate ADT to concrete syntax
 
-File adt2text(ExpressionsFile exprFile)
-  = contents([adt2statement(d) | d <- exprFile.\definitions] + 
-              [adt2statement(e) | e <- exprFile.\expressions]);
+// In Rascal it is hard to generate lists for parse trees, 
+// so we print the lists in a string and then parse the result to get a parse tree with the lists
+str adt2text(ExpressionsFile exprFile)
+  = "<intercalate("\n\n", [adt2statement(d, exprFile) | d <- exprFile.\definitions])>
+    '
+    '<intercalate("\n\n", [adt2statement(e, exprFile) | e <- exprFile.\expressions])>";
 
-Stmnt adt2statement(VariableDefinition def)
-  = varDefinition(definition(def.varName, adt2expr(def.varValue[0])));
+File adt2parsetree(ExpressionsFile exprFile)
+  = parse(#start[File], adt2text(exprFile));
 
-Stmnt adt2statement(Expression abstractExpr)
-  = expression(adt2expr(abstractExpr));
+Stmnt adt2statement(VariableDefinition def, ExpressionsFile exprFile)
+  = (Stmnt)`<Identifier varId> = <Expr varVal>`
+  when varId := [Identifier]"<def.varName>",
+       varVal := adt2expr(def.varValue[0], exprFile);
 
-Expr adt2expr(Expression(Literal l))
-  = literal(l.\value);
+Stmnt adt2statement(Expression abstractExpr, ExpressionsFile exprFile)
+  = (Stmnt)`<Expr e>`
+  when e := adt2expr(abstractExpr, exprFile);
 
-// Expr adt2expr(Expression(VarReference vr))
-//   = varRef(resolve(vr.ref).varName);  //TODO: resolve for the pointer return what it points at
+Expr adt2expr(Expression(Literal l), ExpressionsFile exprFile)
+  = (Expr)`<IntegerLiteral val>` 
+  when IntegerLiteral val := [IntegerLiteral]"<l.\value>";
 
-Expr adt2expr(Expression(BinaryExpression(plus(), Expression leftOp, Expression rightOp)))
-  = add(adt2expr(leftOp), adt2expr(rightOp));
+Expr adt2expr(Expression(VarReference vr), ExpressionsFile exprFile)
+  = (Expr)`<Identifier vName>`
+  when VariableDefinition vd := typeCast(#VariableDefinition, resolve(vr.\ref, exprFile.\definitions)), 
+        Identifier vName := [Identifier]"<vd.\varName>";
 
-Expr adt2expr(Expression(BinaryExpression(minus(), Expression leftOp, Expression rightOp)))
-  = sub(adt2expr(leftOp), adt2expr(rightOp));
+Expr adt2expr(Expression(BinaryExpression(plus(), Expression leftOp, Expression rightOp)), ExpressionsFile exprFile)
+  = (Expr)`(<Expr lhs> + <Expr rhs>)`
+  when lhs := adt2expr(leftOp, exprFile),
+       rhs := adt2expr(rightOp, exprFile);
 
-Expr adt2expr(Expression(BinaryExpression(mult(), Expression leftOp, Expression rightOp)))
-  = mult(adt2expr(leftOp), adt2expr(rightOp));  
+Expr adt2expr(Expression(BinaryExpression(minus(), Expression leftOp, Expression rightOp)), ExpressionsFile exprFile)
+  = (Expr)`(<Expr lhs> - <Expr rhs>)`
+  when lhs := adt2expr(leftOp, exprFile),
+       rhs := adt2expr(rightOp, exprFile);
+
+Expr adt2expr(Expression(BinaryExpression(mult(), Expression leftOp, Expression rightOp)), ExpressionsFile exprFile)
+  = (Expr)`<Expr lhs> * <Expr rhs>`
+  when lhs := adt2expr(leftOp, exprFile),
+       rhs := adt2expr(rightOp, exprFile);  

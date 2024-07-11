@@ -21,28 +21,39 @@ import f1re::lionweb::examples::expression::translators;
 int main3(int testArgument=0) {
     // Try out dynamic instantiation with make
     f1re::lionweb::examples::expression::lang::Literal lit1 = 
-            make(#f1re::lionweb::examples::expression::lang::Literal, "Literal", [], ("\\value": 30));
+            make(#f1re::lionweb::examples::expression::lang::Literal, "Literal", [], ("value": 30));
 
     f1re::lionweb::examples::expression::lang::Literal lit2 = 
-            make(#f1re::lionweb::examples::expression::lang::Literal, "Literal", [], ("\\value": 20));
+            make(#f1re::lionweb::examples::expression::lang::Literal, "Literal", [], ("value": 20));
 
     f1re::lionweb::examples::expression::lang::BinaryExpression expr1 =
             make(#f1re::lionweb::examples::expression::lang::BinaryExpression, "BinaryExpression", 
                     [plus(), Expression(lit1), Expression(lit2)]);
 
     println(prettyNode(expr1));
-    f1re::lionweb::examples::expression::\syntax::Expr expr2 = adt2expr(Expression(expr1));
-    println(prettyNode(expr2));
+    // f1re::lionweb::examples::expression::\syntax::Expr expr2 = adt2expr(Expression(expr1));
+    // println(prettyTree(expr2));
+    // println(expr2);
 
     // Now instantiate a model from the json file
     // TODO: move all language construction into a separate file and function that takes it
-    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW.json|);
+    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW_2.json|);
     LionSpace lionspace = addLangsToLionspace(lionlangs);
     
-    // import an m1-model using the constructed language
-    SerializationChunk instanceChunk = loadLionJSON(|project://lionweb-rascal/input/ExprInstanceLW.json|);
+    // // import an m1-model using the constructed language
+    SerializationChunk instanceChunk = loadLionJSON(|project://lionweb-rascal/input/ExprInstanceLW_2.json|);
     map[str, value] model = jsonlang2model(instanceChunk, lionspace, #ExpressionsFile.definitions);
     println(prettyNode(model["1109945625693563396"]));
+
+    // variable definition node
+    f1re::lionweb::examples::expression::\syntax::Stmnt expr3 = adt2statement(model["8320936306973980740"], model["1109945625693563396"]);
+    println(prettyTree(expr3));
+    println(expr3);
+
+    // binary expression node
+    f1re::lionweb::examples::expression::\syntax::Expr expr4 = adt2expr(model["1109945625693563562"], model["1109945625693563396"]);
+    println(prettyTree(expr4));
+    println(expr4);
 
     // Try out implode --> doesn't work and shall not
     // str demoExprs = "10 + 20";
