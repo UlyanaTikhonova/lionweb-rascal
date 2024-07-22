@@ -1,7 +1,7 @@
 module f1re::lionweb::examples::expression::lang
 
 // Code generated from lionweb language.
-// Date: $2024-07-03T11:09:24.686+00:00$
+// Date: $2024-07-22T11:28:12.556+00:00$
 
 import DateTime;
 import lionweb::pointer;

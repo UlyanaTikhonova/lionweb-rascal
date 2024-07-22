@@ -452,7 +452,7 @@
             "version": "2023.1",
             "key": "Feature-optional"
           },
-          "value": "true"
+          "value": "false"
         },
         {
           "property": {
@@ -703,7 +703,7 @@
             "version": "2023.1",
             "key": "Feature-optional"
           },
-          "value": "true"
+          "value": "false"
         },
         {
           "property": {
@@ -835,7 +835,7 @@
             "version": "2023.1",
             "key": "Feature-optional"
           },
-          "value": "true"
+          "value": "false"
         },
         {
           "property": {

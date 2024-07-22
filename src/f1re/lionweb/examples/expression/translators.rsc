@@ -42,13 +42,14 @@ Expression expr2adt((Expr)`<Expr lhs> - <Expr rhs>`)
 
 // In Rascal it is hard to generate lists for parse trees, 
 // so we print the lists in a string and then parse the result to get a parse tree with the lists
+// Question: current parsing doesn't recognize ";" in the end of the file, why?
 str adt2text(ExpressionsFile exprFile)
-  = "<intercalate("\n\n", [adt2statement(d, exprFile) | d <- exprFile.\definitions])>
+  = "<intercalate("\n", ["<adt2statement(d, exprFile)>;" | d <- exprFile.\definitions])>
     '
-    '<intercalate("\n\n", [adt2statement(e, exprFile) | e <- exprFile.\expressions])>";
+    '<intercalate("\n;", ["<adt2statement(e, exprFile)>" | e <- exprFile.\expressions])>";
 
 File adt2parsetree(ExpressionsFile exprFile)
-  = parse(#start[File], adt2text(exprFile));
+  = parse(#File, adt2text(exprFile));
 
 Stmnt adt2statement(VariableDefinition def, ExpressionsFile exprFile)
   = (Stmnt)`<Identifier varId> = <Expr varVal>`
