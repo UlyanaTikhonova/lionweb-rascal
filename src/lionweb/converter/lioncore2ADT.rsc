@@ -23,7 +23,7 @@ map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaul
 }
 
 // Abstract concept only wraps inheritance: choice over its extensions
-tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cpt, abstract = true)), 
+tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(cpt:Concept(abstract = true))), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol cptADT = adt(cpt.name, []);
@@ -36,7 +36,7 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cp
 // Features of a concept are added to parameters or keyword parameters, depending on whether its type
 // has a default value for it.
 // TODO: order parameters/fields that don't have default value 
-tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Concept cpt, abstract = false)), 
+tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(cpt: Concept(abstract = false))), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol cptADT = adt(cpt.name, []);
@@ -61,7 +61,32 @@ tuple[Symbol, Production] entity2production(LanguageEntity(DataType(Enumeration 
     return <enumADT, choice(enumADT, alts)>;
 }
 
-// TODO: entity2production for Interface and Annotation
+// Primitive type is a single constructor with no parameters
+tuple[Symbol, Production] entity2production(LanguageEntity(DataType(PrimitiveType primType)), 
+                             Language lang, 
+                             LionSpace lionspace = defaultSpace(lang)) {
+    Symbol primADT = adt(primType.name, []);
+    return <primADT, choice(primADT, {\cons(label(primType.name, primADT), [], [], {})})>;
+}
+
+// TODO: the features of the interface should be a common subset for all its extensions <- we should check it!
+tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Interface interface)), 
+                             Language lang, 
+                             LionSpace lionspace = defaultSpace(lang)) {
+    Symbol intrfADT = adt(interface.name, []);
+
+    set[Production] alts = {wrapInheritance(Classifier(interface), intrfADT, ext, lang, lionspace) | 
+                                                ext <- collectExtensions(Classifier(interface), lang)};
+    return <intrfADT, choice(intrfADT, alts)>;
+}
+
+// TODO: entity2production for Annotation is a dummy constructor for now
+tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Annotation annotation)), 
+                             Language lang, 
+                             LionSpace lionspace = defaultSpace(lang)) {
+    Symbol annoADT = adt(annotation.name, []);
+    return <annoADT, \cons(label(annotation.name, annoADT), [], [], {})>;
+}
 
 // Inheritance in Rascal:
 // - extending classifier appears in the constructor of the parent classifier as a field
@@ -74,14 +99,20 @@ Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child
                 {\tag("subtype")});
 }
 
+// Extensions are both relations of `extends` and `implements`
 set[Classifier] collectExtensions(Classifier class, Language lang) {
     set[Classifier] extensions = {};
     Id classId = class.key;
 
+    // `implements` and `Interface.extends` can have many targets, 
+    // `Annotation.extends` and `Concept.extends` only one target
+    // that's why we use different patterns for their lists
     visit(lang) {
-        case e:Concept(extends = [*L, Pointer(classId)]): extensions = extensions + {Classifier(e)};
-        case e:Interface(extends = [*L, Pointer(classId)]): extensions = extensions + {Classifier(e)};
-        case e:Annotation(extends = [*L, Pointer(classId)]): extensions = extensions + {Classifier(e)};
+        case e:Concept(extends = [*L1, Pointer(classId)]): extensions += Classifier(e);
+        case e:Concept(implements = [*L1, Pointer(classId), *L2]): extensions += Classifier(e);
+        case e:Interface(extends = [*L1, Pointer(classId), *L2]): extensions += Classifier(e);
+        case e:Annotation(extends = [*L1, Pointer(classId)]): extensions += Classifier(e);
+        case e:Annotation(implements = [*L1, Pointer(classId), *L2]): extensions += Classifier(e);
     };
 
     return extensions;
