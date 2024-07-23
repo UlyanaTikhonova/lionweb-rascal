@@ -7,6 +7,42 @@ import lionweb::m3::lionspace;
 import Type;
 import String;
 
+import IO;
+import vis::Text;
+
+/*
+ * Inheritance imlementation in Rascal (in the form of ADTs) requires propogating all features of 
+ * a parent classifier to its children.
+ */
+
+Language flattenInheritance(Language lang) {
+    for(Classifier class <- [c | le <- lang.entities, LanguageEntity(Classifier c) := le]) {
+        set[Classifier] extensions = collectExtensions(class, lang);
+        println("Class <class.name> has extensions <[e.name | e <- extensions]>");
+
+        lang = visit(lang) {
+            case Classifier subclass => flatclass 
+                when subclass in extensions, flatclass := propogateFeaturesToChild(subclass, class)
+        };
+    };
+    return lang;
+}
+
+Classifier propogateFeaturesToChild(Classifier(Concept child), Classifier parent) {
+    child.features += parent.features;
+    return Classifier(child);
+}
+
+Classifier propogateFeaturesToChild(Classifier(Interface child), Classifier parent) {
+    child.features += parent.features;
+    return Classifier(child);
+}
+
+Classifier propogateFeaturesToChild(Classifier(Annotation child), Classifier parent) {
+    child.features += parent.features;
+    return Classifier(child);
+}
+
 /* 
  * Mapping Lion Core to Rascal ADT (Symbols and Productions) 
  */
@@ -15,6 +51,9 @@ public list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"];
 
 map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaultSpace(lang)) {
     map[Symbol, Production] langADT = ();
+    lang = flattenInheritance(lang);    //TODO: we might want all languages in the lionspace to be flattened
+    // println("Language after flattening");
+    // println(prettyNode(lang));
     for(LanguageEntity entity <- lang.entities) {
         tuple[Symbol symb, Production prod] entADT = entity2production(entity, lang, lionspace = lionspace);
         langADT[entADT.symb] = entADT.prod;
@@ -32,10 +71,11 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(cpt:Concep
     return <cptADT, choice(cptADT, alts)>;
 }
 
-// Not abstract concept has its own features and might be extended by other concepts
+// Not abstract concept can be instantiated as it is or can be extended by other concepts: it has its own
+//      constructor and alternative constructors for its extensions
 // Features of a concept are added to parameters or keyword parameters, depending on whether its type
-// has a default value for it.
-// TODO: order parameters/fields that don't have default value 
+//      has a default value for it.
+// TODO: order parameters/fields that don't have default value (to ensure a unique order of parameters)
 tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(cpt: Concept(abstract = false))), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
@@ -69,6 +109,7 @@ tuple[Symbol, Production] entity2production(LanguageEntity(DataType(PrimitiveTyp
     return <primADT, choice(primADT, {\cons(label(primType.name, primADT), [], [], {})})>;
 }
 
+// Interface cannot be instantiated, it only wraps inheritance: choice over its extensions and implementations
 // TODO: the features of the interface should be a common subset for all its extensions <- we should check it!
 tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Interface interface)), 
                              Language lang, 
@@ -90,7 +131,9 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Annotation
 
 // Inheritance in Rascal:
 // - extending classifier appears in the constructor of the parent classifier as a field
-// - features of the extending classifier are inserted into the parent constructor
+// - features of the extending classifier are inserted into the parent constructor as keyword parameters
+//          whose values are delegated to the extending classifier
+// - features of the parent classifier are already propogated/copied to the extending classifier
 Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child, Language lang, LionSpace lionspace) {
     list[tuple[Symbol, bool]] childParameters = [feature2parameter(f, lang, lionspace) | f <- child.features];
     return cons(label(parent.name, parentADT), 
