@@ -18,8 +18,6 @@ import vis::Text;
 Language flattenInheritance(Language lang) {
     for(Classifier class <- [c | le <- lang.entities, LanguageEntity(Classifier c) := le]) {
         set[Classifier] extensions = collectExtensions(class, lang);
-        println("Class <class.name> has extensions <[e.name | e <- extensions]>");
-
         lang = visit(lang) {
             case Classifier subclass => flatclass 
                 when subclass in extensions, flatclass := propogateFeaturesToChild(subclass, class)
@@ -51,9 +49,7 @@ public list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"];
 
 map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaultSpace(lang)) {
     map[Symbol, Production] langADT = ();
-    lang = flattenInheritance(lang);    //TODO: we might want all languages in the lionspace to be flattened
-    // println("Language after flattening");
-    // println(prettyNode(lang));
+    lang = flattenInheritance(lang);    //TODO: we might need to store all languages in the lionspace in the flattened form
     for(LanguageEntity entity <- lang.entities) {
         tuple[Symbol symb, Production prod] entADT = entity2production(entity, lang, lionspace = lionspace);
         langADT[entADT.symb] = entADT.prod;
