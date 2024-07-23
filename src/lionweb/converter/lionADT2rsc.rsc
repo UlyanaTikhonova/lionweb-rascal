@@ -93,6 +93,8 @@ str symbol2rsc(adt(str n, list[Symbol] ps))
 str qualify("Pointer") = "lionweb::pointer::Pointer";
 
 str qualify("Id") = "lionweb::pointer::Id";
+
+str qualify("Node") = "node";
   
 default str qualify(str x) = x;
   
