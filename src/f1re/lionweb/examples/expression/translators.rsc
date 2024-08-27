@@ -23,7 +23,7 @@ Expression expr2adt((Expr)`<Literal l>`)
 
 // TODO: here we should do an actual resolving and use the generated uid of the nodes
 Expression expr2adt((Expr)`<Identifier varName>`)
-  = Expression(VarReference(lionweb::pointer::Pointer("<varName>")));    // here we should be using loockup in the tree and uid of the found node!
+  = Expression(VarReference(\ref = lionweb::pointer::Pointer("<varName>")));    // here we should be using loockup in the tree and uid of the found node!
 
 Expression expr2adt((Expr)`(<Expr e>)`)
   = expr2adt(e);

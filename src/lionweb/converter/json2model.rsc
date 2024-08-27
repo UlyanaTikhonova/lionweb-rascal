@@ -77,7 +77,7 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
             return make(datatypeType, el.name, [], ());
         };
 
-        return "Error in proprty2value";
+        return "Error in property2value";
     };
 
     // For property - also find the proper ADT by its key, and add default conversions for the built-in types

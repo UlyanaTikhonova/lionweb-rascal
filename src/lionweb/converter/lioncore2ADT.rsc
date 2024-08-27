@@ -6,6 +6,8 @@ import lionweb::m3::lionspace;
 
 import Type;
 import String;
+import List;
+import Set;
 
 import IO;
 import vis::Text;
@@ -17,27 +19,37 @@ import vis::Text;
 
 Language flattenInheritance(Language lang) {
     for(Classifier class <- [c | le <- lang.entities, LanguageEntity(Classifier c) := le]) {
-        set[Classifier] extensions = collectExtensions(class, lang);
-        lang = visit(lang) {
-            case Classifier subclass => flatclass 
-                when subclass in extensions, flatclass := propogateFeaturesToChild(subclass, class)
-        };
+        lang = propogateFeaturesDownTheHierarchy(lang, class);
     };
     return lang;
 }
 
+Language propogateFeaturesDownTheHierarchy(Language lang, Classifier class) {
+    set[Classifier] extensions = collectExtensions(class, lang);
+    lang = visit(lang) {
+            case Classifier subclass => flatclass 
+                when subclass in extensions, flatclass := propogateFeaturesToChild(subclass, class)
+        };
+    // In the new language version extensions have more features, so we update this list 
+    extensions = collectExtensions(class, lang);
+    for(Classifier subclass <- extensions) {
+        lang = propogateFeaturesDownTheHierarchy(lang, subclass);
+    }
+    return lang;
+}
+
 Classifier propogateFeaturesToChild(Classifier(Concept child), Classifier parent) {
-    child.features += parent.features;
+    child.features = dup(child.features + parent.features);
     return Classifier(child);
 }
 
 Classifier propogateFeaturesToChild(Classifier(Interface child), Classifier parent) {
-    child.features += parent.features;
+    child.features = dup(child.features + parent.features);
     return Classifier(child);
 }
 
 Classifier propogateFeaturesToChild(Classifier(Annotation child), Classifier parent) {
-    child.features += parent.features;
+    child.features = dup(child.features + parent.features);
     return Classifier(child);
 }
 
@@ -114,6 +126,11 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Interface 
 
     set[Production] alts = {wrapInheritance(Classifier(interface), intrfADT, ext, lang, lionspace) | 
                                                 ext <- collectExtensions(Classifier(interface), lang)};
+    // It might happen that the interface is not implemented in the current language, 
+    // but is meant as an extension point (TODO: discuss this mechanism!)
+    if (size(alts) == 0) {
+        return <intrfADT, choice(intrfADT, {\cons(label("notImplementedInterface", intrfADT), [], [], {})})>;
+    }
     return <intrfADT, choice(intrfADT, alts)>;
 }
 
@@ -122,7 +139,7 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Annotation
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol annoADT = adt(annotation.name, []);
-    return <annoADT, \cons(label(annotation.name, annoADT), [], [], {})>;
+    return <annoADT, choice(annoADT, {\cons(label(annotation.name, annoADT), [], [], {})})>;
 }
 
 // Inheritance in Rascal:
@@ -170,10 +187,9 @@ Symbol referenceType(Symbol refTypeAdt)
 // Unfold features into parameters of the constructor
 // - An optional feature is represented by rascal list (default = []).
 // - A multiple link is represented by a rascal list too (default = []).
-// - Whether the feature has a default value depends on its type, so it is also calculated here.
-// Question: why is it not possible to pick up `optional` from a Feature directly (I have to unfold it into a Link and Property) 
+// - Whether the feature has a default value depends on its type, 
+//              so it is also calculated here (as a second return parameter)
 
-// TODO: the case of link should be split for Reference and Containment, to support referencing
 tuple[Symbol, bool] feature2parameter(Feature(Link(Containment containmnt)), Language lang, LionSpace lionspace) {
     LanguageEntity featureType = findReferencedElement(containmnt.\type, lang, lionspace);
     if (containmnt.optional || containmnt.multiple)  
@@ -188,7 +204,7 @@ tuple[Symbol, bool] feature2parameter(Feature(Link(Reference ref)), Language lan
     if (ref.optional || ref.multiple)  
         return <label(field(ref.name), \list(referenceType(refTypeAdt))), true>;
     else 
-        return <label(field(ref.name), referenceType(refTypeAdt)), false>;
+        return <label(field(ref.name), referenceType(refTypeAdt)), true>;
 }
 
 tuple[Symbol, bool] feature2parameter(Feature(Property p, optional = false), Language lang, LionSpace lionspace)  {
@@ -200,9 +216,6 @@ tuple[Symbol, bool] feature2parameter(Feature(Property p, optional = true), Lang
     LanguageEntity featureType = findReferencedElement(p.\type, lang, lionspace);
     return <label(field(p.name), \list(type2symbol(featureType))), true>;
 }
-
-// TODO: change above to use Maybe and proper reference
-// (including the default value)
 
 // Transform type into a rascal symbol
 Symbol type2symbol(LanguageEntity(DataType(PrimitiveType pt, name = "Integer", key="LionCore-builtins-Integer")))
