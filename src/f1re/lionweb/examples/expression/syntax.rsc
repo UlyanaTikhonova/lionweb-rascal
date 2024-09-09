@@ -2,6 +2,9 @@ module f1re::lionweb::examples::expression::\syntax
 
 extend lang::std::Layout;
 
+import List;
+import IO;
+
 lexical IntegerLiteral = [0-9]+;
 lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
 
@@ -26,14 +29,14 @@ lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
 
 /// 
 
-start syntax File = contents: {Stmnt ";"}* statements;
+start syntax File = {Stmnt ";"}* statements;
 
 syntax Stmnt
-  = expression: Expr 
-  | varDefinition: Def;
+  = Expr expr 
+  | Def varDefinition;
 
 syntax Def 
-  = definition: Identifier name "=" Expr;
+  = Identifier name "=" Expr val;
 
 syntax Expr
   = literal: Literal
@@ -47,3 +50,10 @@ syntax Expr
 
 syntax Literal
   = IntegerLiteral;
+
+// The cross-referencing mechanism of this language uses Identifiers:
+Def findVarDefinition(File file, Identifier varName) {
+  list[Def] defs = [d | (Stmnt)`<Def d>` <- file.statements, varName := d.name];
+  if (size(defs) == 0) throw "No definition found for the variable <varName> in the file <file>";
+  return defs[0];
+}

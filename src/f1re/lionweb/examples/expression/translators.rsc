@@ -11,31 +11,34 @@ import f1re::lionweb::examples::expression::\syntax;
 import f1re::lionweb::examples::expression::\lang;
 
 // Translate concrete syntax to ADT
-ExpressionsFile file2lion((File)`<{Stmnt ";"}* statememnts>`)
-  = ExpressionsFile(expressions = [expr2adt(e) | (Stmnt)`<Expr e>` <- statememnts], 
-                    definitions = [expr2adt(d) | (Stmnt)`<Def d>` <- statememnts]);
+ExpressionsFile file2lion(File file)
+  = ExpressionsFile(expressions = [expr2adt(e, file) | (Stmnt)`<Expr e>` <- file.statements], 
+                    definitions = [expr2adt(d, file) | (Stmnt)`<Def d>` <- file.statements],
+                    \uid = "<file.src>");
 
-VariableDefinition expr2adt((Def)`<Identifier name> = <Expr val>`)
-  = VariableDefinition(varName = "<name>", varValue = [expr2adt(val)]);
+Expression expr2adt((Expr)`(<Expr e>)`, File file)
+  = expr2adt(e, file);
 
-Expression expr2adt((Expr)`<Literal l>`)
-  = Expression(f1re::lionweb::examples::expression::\lang::Literal(\value=toInt("<l>")));
+VariableDefinition expr2adt(Def definition, File file)
+  = VariableDefinition(varName = "<definition.name>", 
+                       varValue = [expr2adt(definition.val, file)],
+                       \uid = "<definition.src>");
 
-// TODO: here we should do an actual resolving and use the generated uid of the nodes
-Expression expr2adt((Expr)`<Identifier varName>`)
-  = Expression(VarReference(\ref = lionweb::pointer::Pointer("<varName>")));    // here we should be using loockup in the tree and uid of the found node!
+Expression expr2adt((Expr)`<Literal l>`, File file)
+  = Expression(f1re::lionweb::examples::expression::\lang::Literal(\value=toInt("<l>"), \uid = "<l.src>"));
 
-Expression expr2adt((Expr)`(<Expr e>)`)
-  = expr2adt(e);
+Expression expr2adt(expr: (Expr)`<Identifier varName>`, File file)
+  = Expression(VarReference(\ref = lionweb::pointer::Pointer("<findVarDefinition(file, varName).src>"),
+                            \uid = "<expr.src>"));
 
-Expression expr2adt((Expr)`<Expr lhs> * <Expr rhs>`)
-  = Expression(BinaryExpression(mult(), expr2adt(lhs), expr2adt(rhs)));
+Expression expr2adt(expr: (Expr)`<Expr lhs> * <Expr rhs>`, File file)
+  = Expression(BinaryExpression(mult(), expr2adt(lhs, file), expr2adt(rhs, file), \uid = "<expr.src>"));
 
-Expression expr2adt((Expr)`<Expr lhs> + <Expr rhs>`)
-  = Expression(BinaryExpression(plus(), expr2adt(lhs), expr2adt(rhs)));
+Expression expr2adt(expr: (Expr)`<Expr lhs> + <Expr rhs>`, File file)
+  = Expression(BinaryExpression(plus(), expr2adt(lhs, file), expr2adt(rhs, file), \uid = "<expr.src>"));
 
-Expression expr2adt((Expr)`<Expr lhs> - <Expr rhs>`)
-  = Expression(BinaryExpression(minus(), expr2adt(lhs), expr2adt(rhs)));
+Expression expr2adt(expr: (Expr)`<Expr lhs> - <Expr rhs>`, File file)
+  = Expression(BinaryExpression(minus(), expr2adt(lhs, file), expr2adt(rhs, file), \uid = "<expr.src>"));
 
 
 // Translate ADT to concrete syntax
