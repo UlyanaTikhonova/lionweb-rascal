@@ -6,8 +6,10 @@ import lionweb::pointer;
 
 SerializationChunk loadLionJSON(loc jsonfile) = readJSON(#SerializationChunk, jsonfile);
 
+str lionwebVersion = "2023.1";
+
 data SerializationChunk
-    = SerializationChunk(str serializationFormatVersion = "", 
+    = SerializationChunk(str serializationFormatVersion = lionwebVersion, 
                          list[UsedLanguage] languages = [], 
                          list[Node] nodes = []);
 

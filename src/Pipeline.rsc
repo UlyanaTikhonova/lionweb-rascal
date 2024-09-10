@@ -13,6 +13,8 @@ import lionweb::m3::lionspace;
 import lionweb::converter::lioncore2ADT;
 import lionweb::converter::lionADT2rsc;
 import lionweb::converter::json2model;
+import lionweb::converter::model2json;
+import lang::json::IO;
 
 list[lionweb::m3::lioncore::Language] importLionLanguages(loc jsonfile) {
     println("Serializing lion language(s) from: <jsonfile>");
@@ -47,4 +49,12 @@ map[str, value] instantiateM1Model(loc jsonfile,
     println("Instantiating an M1 model from: <jsonfile>");
     SerializationChunk instanceChunk = loadLionJSON(jsonfile);
     return jsonlang2model(instanceChunk, lionspace, langADT);
+}
+
+void exportM1Model(node astRoot,
+                    lionweb::m3::lionspace::LionSpace lionspace, 
+                    Language lang, loc jsonfile) {
+    SerializationChunk modelChunk = ast2jsonmodel(astRoot, lionspace, lang);
+    writeJSON(jsonfile, modelChunk);
+    println("Exported M1 model of the language <lang.name> into the json file: <jsonfile>");
 }

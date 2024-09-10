@@ -6,11 +6,13 @@ import IO;
 import lionweb::m3::lioncore;
 import lionweb::pointer;
 
+
 // Currently lookup searches for pointers in all registered languages (not models, and not scoped langs/models)
 alias LionSpace = tuple[void(Language) add, 
                         IKeyed(Pointer[&T]) lookup,
                         IKeyed(Pointer[&T], Language) lookupInScope,
-                        IKeyed(Id, Id) findInScope];
+                        IKeyed(Id, Id) findInScope,
+                        tuple[INamed, Language](str, Language) findByName];
 
 LionSpace newLionSpace() {
     // Lioncore M3 language instance
@@ -21,6 +23,7 @@ LionSpace newLionSpace() {
 
     // (Default) language with built-in lionweb data types
     // TODO: generate this definition using M1 json-to-lion transformation
+    // Also here: the Pointer type for managing references in Rascal (not exportable, needed for the converters only)
     Language lionBuiltinLanguage = Language(
             name = "Built-in DataTypes", 
             key = "LionCore-builtins", 
@@ -31,6 +34,7 @@ LionSpace newLionSpace() {
                         LanguageEntity(Classifier(Concept(name = "Node", key = "LionCore-builtins-Node", abstract = true))),
                         LanguageEntity(Classifier(Interface(name = "INamed", key = "LionCore-builtins-INamed", 
                             features = [Feature(Property(name = "name", key = "LionCore-builtins-INamed-name", optional = false, \type = Pointer("LionCore-builtins-String")))])))]);
+                        // LanguageEntity(Classifier(Concept(name = "Pointer", key = "LionCore-Rascal-Pointer", abstract = false)))]);
 
     map[Id, Language] lionLanguages = ("LionCore-builtins": lionBuiltinLanguage, 
                                         "LionCore-M3": lionMetaLanguage);                        
@@ -112,7 +116,36 @@ LionSpace newLionSpace() {
         return elements[0];
     }
 
-    return <add_, lookup_, lookupInScope_, findInScope_>;
+    tuple[INamed, Language] findByName_(str elName, Language scope) {
+        if (elName == "") throw "Look up for the empty name";
+        list[INamed] elements = [];
+        Language owner = scope;
+
+        for(Language lang <- [scope] + [lookup_(l).language | l <- scope.dependsOn]) {
+            visit(lang) {
+                // only concrete classes are possible here
+                // Question: is there a smarter way to do this using &T?
+                case e:LanguageEntity(_, name = elName): elements += INamed(IKeyed(e));
+                case e:EnumerationLiteral(name = elName): elements += INamed(IKeyed(e));
+                case e:Feature(_, name = elName): elements += INamed(IKeyed(e));
+                case e:Language(name = elName): elements += INamed(IKeyed(e));
+                case e:INamed(_, name = elName): elements += e;
+            };
+            if (size(elements) >= 1) {
+                owner = lang;
+                break;
+            }
+        }
+
+        // TODO: validate that the found element is actually of type &T
+
+        if (size(elements) == 0) throw "No element found for the name: <elName>";
+        if (size(elements) > 1) throw "More than one element found for the name: <elName>";
+        
+        return <elements[0], owner>;
+    }
+
+    return <add_, lookup_, lookupInScope_, findInScope_, findByName_>;
 }
 
 LionSpace defaultSpace(Language lang) {

@@ -10,7 +10,7 @@ import Pipeline;
 import lionweb::m3::lioncore;
 import lionweb::m3::lionspace;
 
-// This example uses already imported LionWeb language to import a Rascal AST into LionWen M1 model
+// This example uses already imported LionWeb language to import a Rascal AST into LionWen M1 model (json)
 import f1re::lionweb::examples::expression::lang;
 import f1re::lionweb::examples::expression::\syntax;
 import f1re::lionweb::examples::expression::translators;
@@ -23,6 +23,19 @@ int main4(int testArgument=0) {
     println(prettyTree(parseTree));
     f1re::lionweb::examples::expression::lang::ExpressionsFile abstractTree = file2lion(parseTree);
     println(prettyNode(abstractTree));
+
+
+    // To instantiate a model from the json file, we need to have its language in the context (aka lionspace)
+    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW_2.json|);
+    LionSpace lionspace = addLangsToLionspace(lionlangs);
+    
+    
+    // println("Type of the AST: <#f1re::lionweb::examples::expression::lang::ExpressionsFile>");
+
+    // Export an m1-model using the imported language and the previously generated Rascal ADT of this language 
+    loc jsonfile = |project://lionweb-rascal/output/exampleM1model.json|;
+    exportM1Model(abstractTree, lionspace, lionlangs[0], jsonfile);
+
 
     return testArgument;
 }
