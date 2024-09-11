@@ -28,23 +28,13 @@ SerializationChunk ast2jsonmodel(node astRoot, LionSpace lionspace, Language lan
     // set[Language] usedLanguages = {language, lionspace.lookup(Pointer("LionCore-builtins")).language};
     usedLanguages = {language, lionspace.lookup(Pointer("LionCore-builtins")).language};
 
-    // println(intercalate(", ", [le.name | le <- language.entities]));
-    // println(intercalate(", ", [le.key | le <- language.entities]));
-
     // Recursively visit AST and generate json nodes out of its nodes
     // Nodes are created only for the instances of classifiers
     
     instantiateLangEntity(getNodeType(astRoot, language, lionspace), astRoot, language, lionspace, "null");
     println("Build <size(builtNodes)> nodes");
-
-    // Get rid of the fake nodes
-    // builtNodes = delete(builtNodes, "");
-
-    // Visit AST and fill in the cross references between the json nodes
-    // ...
     
-    
-    // Check that the used languages are exceeding the set of languages this one depends on
+    // Check that the used languages are not exceeding the set of languages this one depends on
     // println("Used languages: <[l.name | l <- usedLanguages]>");
     // println("Should be subset of: <[lionspace.lookup(l).language.name | l <- language.dependsOn] + language.name>");
     assert(usedLanguages <= toSet([lionspace.lookup(l).language | l <- language.dependsOn] + language));    
@@ -122,7 +112,8 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
         switch (feature) {
             case Feature(Property property): 
                 jsonNode.properties += [instantiateProperty(featureValue, property, language, lionspace)];
-            // case Feature(Link(Reference)): ;    // here we need to find original nodes in the builtnodes
+            case Feature(Link(Reference reference)): 
+                jsonNode.references += [instantiateReference(featureValue, reference, language, lionspace)];
             case Feature(Link(Containment containment)):
                 jsonNode.containments += [instantiateContainment(featureValue, containment, language, lionspace, jsonNode.id)];
         };
@@ -168,6 +159,27 @@ lionweb::converter::lionjson::Containment instantiateContainment(value val,
     return lionweb::converter::lionjson::Containment(
                     feature2metapointer(lionspace.findInScope(language.key, containment.key).feature, language),
                     children = childrenIds
+    );
+}
+
+lionweb::converter::lionjson::Reference instantiateReference(value val, 
+                                                           lionweb::m3::lioncore::Reference reference, 
+                                                           Language language, LionSpace lionspace) {
+    list[ReferenceTarget] targets = [];
+
+    // the value is the child node
+    if (!reference.optional && !reference.multiple) {
+        targets += pointer2referenceTarget(val);
+    } else {  // the value is the list of child nodes
+        list[node] astChildren = typeCast(#list[node], val);
+        for (node astChild <- astChildren) {            
+            targets += pointer2referenceTarget(astChild);
+        };
+    };
+
+    return lionweb::converter::lionjson::Reference(
+                    feature2metapointer(lionspace.findInScope(language.key, reference.key).feature, language),
+                    targets = targets
     );
 }
 
