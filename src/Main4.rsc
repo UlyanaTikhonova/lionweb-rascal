@@ -17,7 +17,8 @@ import f1re::lionweb::examples::expression::translators;
 
 int main4(int testArgument=0) {
     str text = "x = 5;
-               '(10 + x)";
+               '(10 + x);
+               '(100 - 8)";
 
     f1re::lionweb::examples::expression::\syntax::File parseTree = parse(#File, text);
     println(prettyTree(parseTree));
