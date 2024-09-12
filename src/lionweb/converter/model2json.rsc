@@ -39,7 +39,8 @@ SerializationChunk ast2jsonmodel(node astRoot, LionSpace lionspace, Language lan
     // println("Should be subset of: <[lionspace.lookup(l).language.name | l <- language.dependsOn] + language.name>");
     assert(usedLanguages <= toSet([lionspace.lookup(l).language | l <- language.dependsOn] + language));    
 
-    return SerializationChunk(languages = [lang2json(l) | l <- usedLanguages], 
+    return SerializationChunk( serializationFormatVersion = "2023.1",
+                                languages = [lang2json(l) | l <- usedLanguages], 
                                 nodes = toList(range(builtNodes)));
 }
 
@@ -93,7 +94,8 @@ Node unwrapInheritance(node astNode, Classifier lionType, Language language, Lio
 Node instantiateNode(node astNode, Classifier lionType, Language language, LionSpace lionspace, Id parentId) {
     Node jsonNode = Node(langEntity2metapointer(LanguageEntity(lionType), language),
                          id = assignId(astNode),
-                         parent = parentId);
+                         parent = parentId,
+                         containments = [], properties = [], references = [], annotations = []);
 
     list[value] astNonameChildren = getChildren(astNode);
     map[str, value] astLabeledChildren = getKeywordParameters(astNode);
@@ -130,7 +132,19 @@ lionweb::converter::lionjson::Property instantiateProperty(value val,
                                                            Language language, LionSpace lionspace)
     = lionweb::converter::lionjson::Property(
                     feature2metapointer(lionspace.findInScope(language.key, property.key).feature, language), 
-                    \value = "<val>");
+                    \value = "<lionValue2json(val, property, language, lionspace)>");
+
+value lionValue2json(value val, lionweb::m3::lioncore::Property property, Language language, LionSpace lionspace) {
+    DataType valueType = lionspace.lookupInScope(property.\type, language).languageentity.datatype;
+    if (DataType(Enumeration enum) := valueType) {
+        str literalName = substring("<val>", 0, size("<val>") - 2); // here doesn't work: we cannot get name of value, only of node!
+        list[EnumerationLiteral] enumLiteral = [el | el <- enum.literals, el.name == literalName];
+        if (size(enumLiteral) > 0) {
+            return enumLiteral[0].key;
+        } else throw "Cannot find enumeration literal <literalName>";        
+    } else
+        return val;
+}
 
 // instantiateLangEntity (but take care of optional and multiple)
 lionweb::converter::lionjson::Containment instantiateContainment(value val, 

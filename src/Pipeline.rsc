@@ -55,6 +55,7 @@ void exportM1Model(node astRoot,
                     lionweb::m3::lionspace::LionSpace lionspace, 
                     Language lang, loc jsonfile) {
     SerializationChunk modelChunk = ast2jsonmodel(astRoot, lionspace, lang);
+    println(prettyNode(modelChunk));
     writeJSON(jsonfile, modelChunk);
     println("Exported M1 model of the language <lang.name> into the json file: <jsonfile>");
 }
