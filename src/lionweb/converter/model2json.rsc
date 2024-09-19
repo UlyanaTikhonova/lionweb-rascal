@@ -138,10 +138,11 @@ value lionValue2json(value val, lionweb::m3::lioncore::Property property, Langua
     DataType valueType = lionspace.lookupInScope(property.\type, language).languageentity.datatype;
     if (DataType(Enumeration enum) := valueType) {
         str literalName = substring("<val>", 0, size("<val>") - 2); // here doesn't work: we cannot get name of value, only of node!
-        list[EnumerationLiteral] enumLiteral = [el | el <- enum.literals, el.name == literalName];
-        if (size(enumLiteral) > 0) {
-            return enumLiteral[0].key;
-        } else throw "Cannot find enumeration literal <literalName>";        
+        return literalName;
+        // list[EnumerationLiteral] enumLiteral = [el | el <- enum.literals, el.name == literalName];
+        // if (size(enumLiteral) > 0) {
+        //     return enumLiteral[0].key;
+        // } else throw "Cannot find enumeration literal <literalName>";        
     } else
         return val;
 }
