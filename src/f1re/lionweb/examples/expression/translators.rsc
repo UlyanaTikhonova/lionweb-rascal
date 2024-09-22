@@ -49,7 +49,7 @@ Expression expr2adt(expr: (Expr)`<Expr lhs> - <Expr rhs>`, File file)
 str adt2text(ExpressionsFile exprFile)
   = "<intercalate("\n", ["<adt2statement(d, exprFile)>;" | d <- exprFile.\definitions])>
     '
-    '<intercalate("\n;", ["<adt2statement(e, exprFile)>" | e <- exprFile.\expressions])>";
+    '<intercalate(";\n", ["<adt2statement(e, exprFile)>" | e <- exprFile.\expressions])>";
 
 File adt2parsetree(ExpressionsFile exprFile)
   = parse(#File, adt2text(exprFile));

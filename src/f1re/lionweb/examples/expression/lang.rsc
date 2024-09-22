@@ -1,7 +1,7 @@
 module f1re::lionweb::examples::expression::lang
 
 // Code generated from lionweb language.
-// Date: $2024-08-27T13:50:43.246+00:00$
+// Date: $2024-09-20T14:08:44.435+00:00$
 
 import DateTime;
 import lionweb::pointer;
@@ -17,6 +17,11 @@ data ExpressionsFile
       , lionweb::pointer::Id \uid = "")
   ;
 
+data VarReference
+  = VarReference(lionweb::pointer::Pointer[VariableDefinition] \ref = null()
+      , lionweb::pointer::Id \uid = "")
+  ;
+
 data BinaryOperation
   = plus()
   | mult()
@@ -26,12 +31,6 @@ data BinaryOperation
 data VariableDefinition
   = VariableDefinition(str \varName = ""
       , list[Expression] \varValue = []
-      , lionweb::pointer::Id \uid = "")
-  ;
-
-
-data VarReference
-  = VarReference(lionweb::pointer::Pointer[VariableDefinition] \ref = null()
       , lionweb::pointer::Id \uid = "")
   ;
 

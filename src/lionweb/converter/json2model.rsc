@@ -71,13 +71,14 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         Production prod = langADT[datatypeADT];
         type[value] datatypeType = type(datatypeADT, (datatypeADT : prod));
 
-        // Find the name of the constructor using the key in the child value
-        IKeyed enumLiteral = lionspace.findInScope(jsonProperty.property.language, jsonProperty.\value);
-        if (IKeyed(EnumerationLiteral el) := enumLiteral) {
-            return make(datatypeType, el.name, [], ());
-        };
-
-        return "Error in property2value";
+        // Not this: Find the name of the constructor using the key in the child value
+        // But: The json value is the name of the enumeration literal.
+        return make(datatypeType, jsonProperty.\value, [], ());
+        // IKeyed enumLiteral = lionspace.findInScope(jsonProperty.property.language, jsonProperty.\value);
+        // if (IKeyed(EnumerationLiteral el) := enumLiteral) {
+        //     return make(datatypeType, el.name, [], ());
+        // };
+        // return "Error in property2value";
     };
 
     // For property - also find the proper ADT by its key, and add default conversions for the built-in types
