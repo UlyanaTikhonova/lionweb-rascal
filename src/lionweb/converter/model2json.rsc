@@ -16,6 +16,7 @@ import lionweb::converter::lionjson;
 import lionweb::converter::lioncore2json;
 import lionweb::converter::lioncore2ADT;
 
+// TODO: move these global variables inside the function
 // Collect all nodes that we build, with their original AST nodes and Lioncore types
 map[Id, lionweb::converter::lionjson::Node] builtNodes = ();
 // Collect all additional languages used in the node instantiation
@@ -198,11 +199,11 @@ lionweb::converter::lionjson::Reference instantiateReference(value val,
     );
 }
 
+// LionWeb protocol allows identifiers from the character set Base64url
+// To decode the id back into loc we can use fromBase64url()
 Id assignId(node object) {
-    try return getId(object);
-    catch: return typeOf(object).name + "_" + getName(object) + "<uuidi()>";
+    try return toBase64url(getId(object));
+    catch: return toBase64url(typeOf(object).name + "_" + getName(object) + "<uuidi()>");
 }
-
-
 
 // TODO: Annotation.annotates should be transformed into Node.annotations

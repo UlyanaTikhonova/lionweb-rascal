@@ -73,12 +73,13 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
 
         // Not this: Find the name of the constructor using the key in the child value
         // But: The json value is the name of the enumeration literal.
-        return make(datatypeType, jsonProperty.\value, [], ());
+        // return make(datatypeType, jsonProperty.\value, [], ());
         // IKeyed enumLiteral = lionspace.findInScope(jsonProperty.property.language, jsonProperty.\value);
-        // if (IKeyed(EnumerationLiteral el) := enumLiteral) {
-        //     return make(datatypeType, el.name, [], ());
-        // };
-        // return "Error in property2value";
+        if (DataType(Enumeration enum) := dataType) 
+            if (jsonProperty.\value in [el.name | el <- enum.literals]) {
+                return make(datatypeType, jsonProperty.\value, [], ());
+            };
+        return "Error in property2value for value <jsonProperty.\value>";
     };
 
     // For property - also find the proper ADT by its key, and add default conversions for the built-in types
@@ -95,7 +96,7 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
                     println("Search the lion type of this property: <lp.\type.uid>");
                     IKeyed childType = lionspace.findInScope(jsonProperty.property.language, lp.\type.uid); // TODO: refactor this!!
                     // this is the key for the not-built-in types
-                    println("Invoke property2value for the node: <jsonProperty>");
+                    println("Invoke property2value for the node: <jsonProperty> of the type <childType>");
                     childValue = property2value(childType, jsonProperty);
                     break;
                 };                
