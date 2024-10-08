@@ -31,6 +31,7 @@ LionSpace newLionSpace() {
             entities = [LanguageEntity(DataType(PrimitiveType(name = "String", key = "LionCore-builtins-String"))),
                         LanguageEntity(DataType(PrimitiveType(name = "Boolean", key = "LionCore-builtins-Boolean"))),
                         LanguageEntity(DataType(PrimitiveType(name = "Integer", key = "LionCore-builtins-Integer"))),
+                        LanguageEntity(DataType(PrimitiveType(name = "JSON", key = "LionCore-builtins-JSON"))),
                         LanguageEntity(Classifier(Concept(name = "Node", key = "LionCore-builtins-Node", abstract = true))),
                         LanguageEntity(Classifier(Interface(name = "INamed", key = "LionCore-builtins-INamed", 
                             features = [Feature(Property(name = "name", key = "LionCore-builtins-INamed-name", optional = false, \type = Pointer("LionCore-builtins-String")))])))]);

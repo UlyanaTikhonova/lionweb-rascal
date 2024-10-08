@@ -20,6 +20,7 @@ void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT)
                 '
                 'import DateTime;
                 'import lionweb::pointer;
+                'import lang::json::ast::JSON;
                 '
                 '<lion2rsc(lionlang, langADT)>");
 
@@ -95,6 +96,8 @@ str qualify("Pointer") = "lionweb::pointer::Pointer";
 str qualify("Id") = "lionweb::pointer::Id";
 
 str qualify("Node") = "node";
+
+str qualify("JSON") = "JSON";
   
 default str qualify(str x) = x;
   

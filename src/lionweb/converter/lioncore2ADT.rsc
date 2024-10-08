@@ -21,6 +21,12 @@ Language flattenInheritance(Language lang) {
     for(Classifier class <- [c | le <- lang.entities, LanguageEntity(Classifier c) := le]) {
         lang = propogateFeaturesDownTheHierarchy(lang, class);
     };
+    
+    // As a separate case, take care of the built-in interface INamed
+    Classifier inamedInterface = Classifier(Interface(name = "INamed", key = "LionCore-builtins-INamed", 
+                        features = [Feature(Property(name = "name", key = "LionCore-builtins-INamed-name", optional = false, \type = Pointer("LionCore-builtins-String")))]));
+    lang = propogateFeaturesDownTheHierarchy(lang, inamedInterface);
+
     return lang;
 }
 
@@ -53,6 +59,72 @@ Classifier propogateFeaturesToChild(Classifier(Annotation child), Classifier par
     return Classifier(child);
 }
 
+/*
+ * Annotations are included as containments to the language classifiers that they annotate
+ */
+
+Language embedAnnotations(Language lang) {
+    for(Annotation annotation <- [a | le <- lang.entities, LanguageEntity(Classifier(Annotation a)) := le]) {
+        lang = embedAnnotation(lang, annotation);
+    };
+    return lang;
+}
+
+Language embedAnnotation(Language lang, Annotation annotation) {
+    list[Id] annotatedClassifierIds = [p.uid | p <- annotation.annotates];
+
+    // Built-in Node is an ancestor of all concepts, so we add this annotation to all concepts of the language
+    if("LionCore-builtins-Node" in annotatedClassifierIds) {
+        lang = visit(lang) {
+                case Classifier class => classWithAnno 
+                    when Classifier(Concept concept) := class,
+                        annoFeature := annotationFeature(annotation, Classifier(concept)), 
+                        classWithAnno := embedAnnoIntoClassifier(annoFeature, Classifier(concept))
+            };
+    }
+    // For the built-in INamed interface, we check which clasifiers extend it, to add the annotation
+    if("LionCore-builtins-INamed" in annotatedClassifierIds) {
+        set[Classifier] inamedExtensions = collectExtensions(Classifier(Interface(name = "INamed", key = "LionCore-builtins-INamed")), lang);
+        lang = visit(lang) {
+                case Classifier class => classWithAnno 
+                    when class in inamedExtensions,
+                        annoFeature := annotationFeature(annotation, class), 
+                        classWithAnno := embedAnnoIntoClassifier(annoFeature, class)
+            };
+    }
+    // General case: add the annotation to classifiers that this annotation annotates
+    lang = visit(lang) {
+            case Classifier class => classWithAnno 
+                when class.key in annotatedClassifierIds,
+                    annoFeature := annotationFeature(annotation, class), 
+                    classWithAnno := embedAnnoIntoClassifier(annoFeature, class)
+        };   
+    
+    return lang;
+}
+
+Feature annotationFeature(Annotation annotation, Classifier class)
+    = Feature(Link(Containment(name = "anno" + annotation.name, 
+                                key = class.key + annotation.key,
+                                optional = true,
+                                multiple = false,
+                                \type = Pointer(annotation.key, info = annotation.name))));
+
+Classifier embedAnnoIntoClassifier(Feature annotation, Classifier(Concept class)) {
+    class.features = class.features + annotation;
+    return Classifier(class);
+}
+
+Classifier embedAnnoIntoClassifier(Feature annotation, Classifier(Interface class)) {
+    class.features = class.features + annotation;
+    return Classifier(class);
+}
+
+Classifier embedAnnoIntoClassifier(Feature annotation, Classifier(Annotation class)) {
+    class.features = class.features + annotation;
+    return Classifier(class);
+}
+
 /* 
  * Mapping Lion Core to Rascal ADT (Symbols and Productions) 
  */
@@ -61,7 +133,12 @@ public list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"];
 
 map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaultSpace(lang)) {
     map[Symbol, Production] langADT = ();
+
+    // Prepare language for the transformations: embed annotations as containments and flattern inheritance
+    lang = embedAnnotations(lang);
     lang = flattenInheritance(lang);    //TODO: we might need to store all languages in the lionspace in the flattened form
+    
+    // Transform LionCore language into Rascal ADT
     for(LanguageEntity entity <- lang.entities) {
         tuple[Symbol symb, Production prod] entADT = entity2production(entity, lang, lionspace = lionspace);
         langADT[entADT.symb] = entADT.prod;
@@ -134,12 +211,22 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Interface 
     return <intrfADT, choice(intrfADT, alts)>;
 }
 
-// TODO: entity2production for Annotation is a dummy constructor for now
+// The same as for a concrete concept
 tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Annotation annotation)), 
                              Language lang, 
                              LionSpace lionspace = defaultSpace(lang)) {
     Symbol annoADT = adt(annotation.name, []);
-    return <annoADT, choice(annoADT, {\cons(label(annotation.name, annoADT), [], [], {})})>;
+
+    list[tuple[Symbol, bool]] entityParameters = [feature2parameter(f, lang, lionspace) | f <- annotation.features];
+    Production definition = cons(label(annotation.name, annoADT),
+                                 [param | <param, hasDefault> <- entityParameters, hasDefault == false],
+                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true] + [identifierField()], 
+                                 {});
+
+    set[Production] alts = {definition} + 
+                {wrapInheritance(Classifier(annotation), annoADT, ext, lang, lionspace) | 
+                                                ext <- collectExtensions(Classifier(annotation), lang)};
+    return <annoADT, choice(annoADT, alts)>;
 }
 
 // Inheritance in Rascal:

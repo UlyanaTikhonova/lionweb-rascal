@@ -200,7 +200,7 @@ lionweb::converter::lionjson::Reference instantiateReference(value val,
 }
 
 // LionWeb protocol allows identifiers from the character set Base64url
-// To decode the id back into loc we can use fromBase64url()
+// Later: to decode the id back into loc we can use fromBase64url()
 Id assignId(node object) {
     try return toBase64url(getId(object));
     catch: return toBase64url(typeOf(object).name + "_" + getName(object) + "<uuidi()>");

@@ -14,6 +14,7 @@ import f1re::lionweb::examples::expression::\lang;
 ExpressionsFile file2lion(File file)
   = ExpressionsFile(expressions = [expr2adt(e, file) | (Stmnt)`<Expr e>` <- file.statements], 
                     definitions = [expr2adt(d, file) | (Stmnt)`<Def d>` <- file.statements],
+                    name = "",
                     \uid = "<file.src>");
 
 Expression expr2adt((Expr)`(<Expr e>)`, File file)
