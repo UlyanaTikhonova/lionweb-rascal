@@ -120,7 +120,15 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
             case Feature(Link(Containment containment)):
                 jsonNode.containments += [instantiateContainment(featureValue, containment, language, lionspace, jsonNode.id)];
         };
+    };
 
+    // Extract annotations from the AST node into jsonnode.annotations
+    // Note: we don't do type check for these annotations here! (might be too complex for Node annotations)
+    for(str annoFeature <- [af | af <- astLabeledChildren, /^anno/ := af]) {
+        list[node] annoReference = typeCast(#list[node], astLabeledChildren[annoFeature]);
+        for (node astPointer <- annoReference) {            
+            jsonNode.annotations += typeCast(#Pointer[&T], astPointer).uid;
+        };
     };
 
     // Store the constructed node
@@ -205,5 +213,3 @@ Id assignId(node object) {
     try return toBase64url(getId(object));
     catch: return toBase64url(typeOf(object).name + "_" + getName(object) + "<uuidi()>");
 }
-
-// TODO: Annotation.annotates should be transformed into Node.annotations

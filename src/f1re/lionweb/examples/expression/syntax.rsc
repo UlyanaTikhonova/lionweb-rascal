@@ -7,6 +7,7 @@ import IO;
 
 lexical IntegerLiteral = [0-9]+;
 lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
+lexical StringLiteral = [a-z0-9]*;
 
 // start syntax ExpressionsFile
 //     = {Expression ";"}* expressions;
@@ -32,11 +33,14 @@ lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
 start syntax File = {Stmnt ";"}* statements;
 
 syntax Stmnt
-  = Expr expr 
+  = Comp comp 
   | Def varDefinition;
 
 syntax Def 
-  = Identifier name "=" Expr val;
+  = DocAnno? Identifier name "=" Expr val;
+
+syntax Comp
+  = DocAnno? Expr expr;
 
 syntax Expr
   = literal: Literal
@@ -50,6 +54,9 @@ syntax Expr
 
 syntax Literal
   = IntegerLiteral;
+
+syntax DocAnno
+  = "@doc" StringLiteral "\n";  
 
 // The cross-referencing mechanism of this language uses Identifiers:
 Def findVarDefinition(File file, Identifier varName) {

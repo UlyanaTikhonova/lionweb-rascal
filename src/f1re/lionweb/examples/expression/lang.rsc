@@ -1,25 +1,26 @@
 module f1re::lionweb::examples::expression::lang
 
 // Code generated from lionweb language.
-// Date: $2024-10-08T11:18:02.916+00:00$
+// Date: $2024-10-09T11:24:49.425+00:00$
 
 import DateTime;
 import lionweb::pointer;
+import lang::json::ast::JSON;
 
 data Literal
   = Literal(int \value = 0
       , lionweb::pointer::Id \uid = "")
   ;
 
-data VarReference
-  = VarReference(lionweb::pointer::Pointer[VariableDefinition] \ref = null()
+data Documentation
+  = Documentation(list[str] \body = []
       , lionweb::pointer::Id \uid = "")
   ;
 
-data ExpressionsFile
-  = ExpressionsFile(list[Expression] \expressions = []
-      , list[VariableDefinition] \definitions = []
-      , str \name = ""
+data VariableDefinition
+  = VariableDefinition(str \varName = ""
+      , list[Expression] \varValue = []
+      , list[Documentation] \annoDocumentation = []
       , lionweb::pointer::Id \uid = "")
   ;
 
@@ -29,9 +30,21 @@ data BinaryOperation
   | minus()
   ;
 
-data VariableDefinition
-  = VariableDefinition(str \varName = ""
-      , list[Expression] \varValue = []
+data Statement
+  = Statement(Computation \computation
+      , Expression \expr = computation.\expr
+      , list[Documentation] \annoDocumentation = computation.\annoDocumentation
+      , lionweb::pointer::Id \uid = computation.\uid)
+  | Statement(VariableDefinition \variableDefinition
+      , str \varName = variableDefinition.\varName
+      , list[Expression] \varValue = variableDefinition.\varValue
+      , list[Documentation] \annoDocumentation = variableDefinition.\annoDocumentation
+      , lionweb::pointer::Id \uid = variableDefinition.\uid)
+  ;
+
+data Computation
+  = Computation(Expression \expr
+      , list[Documentation] \annoDocumentation = []
       , lionweb::pointer::Id \uid = "")
   ;
 
@@ -53,5 +66,16 @@ data BinaryExpression
   = BinaryExpression(BinaryOperation \operation
       , Expression \leftOperand
       , Expression \rightOperand
+      , lionweb::pointer::Id \uid = "")
+  ;
+
+data VarReference
+  = VarReference(lionweb::pointer::Pointer[VariableDefinition] \ref = null()
+      , lionweb::pointer::Id \uid = "")
+  ;
+
+data ExpressionsFile
+  = ExpressionsFile(list[Statement] \body = []
+      , str \name = ""
       , lionweb::pointer::Id \uid = "")
   ;

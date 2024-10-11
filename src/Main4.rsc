@@ -23,13 +23,12 @@ int mainM1FromRascal(int testArgument=0) {
 
     f1re::lionweb::examples::expression::\syntax::File parseTree = parse(#File, text);
     println(prettyTree(parseTree));
-    f1re::lionweb::examples::expression::lang::ExpressionsFile abstractTree = file2lion(parseTree);
+    f1re::lionweb::examples::expression::lang::ExpressionsFile abstractTree = file2lion(parseTree, filename = "ExampleExpressionsFile");
     println(prettyNode(abstractTree));
 
     // To instantiate a model from the json file, we need to have its language in the context (aka lionspace)
     list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW_2.json|);
     LionSpace lionspace = addLangsToLionspace(lionlangs);
-    
     
     // println("Type of the AST: <#f1re::lionweb::examples::expression::lang::ExpressionsFile>");
 

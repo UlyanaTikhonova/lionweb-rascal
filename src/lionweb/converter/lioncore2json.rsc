@@ -13,5 +13,6 @@ MetaPointer langEntity2metapointer(LanguageEntity entity, Language lang)
 MetaPointer feature2metapointer(Feature feature, Language lang)
     = MetaPointer(language = lang.key, version = lang.version, key = feature.key);
 
+// TODO: encoding to Base64url here should have a corresponding decoding when translating from json!
 ReferenceTarget pointer2referenceTarget(Pointer[&T] pointer)
-    = ReferenceTarget(reference = pointer.uid, resolveInfo = pointer.info);
+    = ReferenceTarget(reference = toBase64url(pointer.uid), resolveInfo = pointer.info);
