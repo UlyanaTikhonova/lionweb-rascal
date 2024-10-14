@@ -1,4 +1,4 @@
-module Main3
+module demoM1IntoRascal
 
 import IO;
 import vis::Text;

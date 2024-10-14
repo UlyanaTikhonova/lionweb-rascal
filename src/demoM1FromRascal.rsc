@@ -1,4 +1,4 @@
-module Main4
+module demoM1FromRascal
 
 import IO;
 import vis::Text;
@@ -34,7 +34,7 @@ int mainM1FromRascal(int testArgument=0) {
 
     // Export an m1-model using the imported language and the previously generated Rascal ADT of this language 
     loc jsonfile = |project://lionweb-rascal/output/ExampleExpressionsFile.json|;
-    exportM1Model(abstractTree, lionspace, lionlangs[0], jsonfile);
+    exportM1Model(abstractTree, lionspace, lionlangs[0].key, jsonfile);
 
 
     return testArgument;
