@@ -14,6 +14,7 @@ import lionweb::converter::lioncore2ADT;
 import lionweb::converter::lionADT2rsc;
 import lionweb::converter::json2model;
 import lionweb::converter::model2json;
+import lionweb::pointer;
 import lang::json::IO;
 
 list[lionweb::m3::lioncore::Language] importLionLanguages(loc jsonfile) {
@@ -27,13 +28,17 @@ list[lionweb::m3::lioncore::Language] importLionLanguages(loc jsonfile) {
 lionweb::m3::lionspace::LionSpace addLangsToLionspace(list[lionweb::m3::lioncore::Language] langs,
                                                     lionweb::m3::lionspace::LionSpace lionspace = newLionSpace()) {
     for(lionweb::m3::lioncore::Language lang <- langs) {
+        // Prepare language for the transformations: embed annotations as containments and flattern inheritance
+        lang = embedAnnotations(lang);
+        lang = flattenInheritance(lang);
         lionspace.add(lang);
     }
     return lionspace;
 }
 
-map[Symbol, Production] generateRascalADTFile(lionweb::m3::lioncore::Language lang, 
+map[Symbol, Production] generateRascalADTFile(Id langId, 
                                             lionweb::m3::lionspace::LionSpace lionspace) {
+    lionweb::m3::lioncore::Language lang = lionspace.lookup(Pointer(langId)).language;                    
     println("Generating Rascal ADT for the LionCore language: <lang.name>");
     map[Symbol, Production] langADT = language2adt(lang, lionspace = lionspace);
     print("Language data set: ");
@@ -53,7 +58,8 @@ map[str, value] instantiateM1Model(loc jsonfile,
 
 void exportM1Model(node astRoot,
                     lionweb::m3::lionspace::LionSpace lionspace, 
-                    Language lang, loc jsonfile) {
+                    Id langId, loc jsonfile) {
+    lionweb::m3::lioncore::Language lang = lionspace.lookup(Pointer(langId)).language;   
     SerializationChunk modelChunk = ast2jsonmodel(astRoot, lionspace, lang);
     // println(prettyNode(modelChunk));
     writeJSON(jsonfile, modelChunk);

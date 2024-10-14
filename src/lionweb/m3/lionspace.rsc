@@ -42,7 +42,8 @@ LionSpace newLionSpace() {
 
     void add_(Language lang) {
         println("Add the language to the lion space: <lang.name>");
-        // TODO: check that we are not adding a language that already exists in the space (using its key)
+        // Note: we don't check that the language being added already exists in the space, 
+        // as we use this function to overwrite (update) existing languages (!!)
         lionLanguages[lang.key] = lang;
     }
 
@@ -112,7 +113,8 @@ LionSpace newLionSpace() {
         }
 
         if (size(elements) == 0) throw "No element found for the key: <elementKey>";
-        if (size(elements) > 1) throw "More than one element found for the key: <elementKey>";
+        // The following is allowed as a flattened language contains multiple instances of the same features
+        // if (size(elements) > 1) throw "More than one element found for the key: <elementKey>";
 
         return elements[0];
     }

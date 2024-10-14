@@ -136,7 +136,8 @@ map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaul
 
     // Prepare language for the transformations: embed annotations as containments and flattern inheritance
     lang = embedAnnotations(lang);
-    lang = flattenInheritance(lang);    //TODO: we might need to store all languages in the lionspace in the flattened form
+    lang = flattenInheritance(lang);
+    lionspace.add(lang);    // update the language in the space, so that we can rely on its adjusted structure later
     
     // Transform LionCore language into Rascal ADT
     for(LanguageEntity entity <- lang.entities) {

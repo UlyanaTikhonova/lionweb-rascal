@@ -100,9 +100,11 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
 
     list[value] astNonameChildren = getChildren(astNode);
     map[str, value] astLabeledChildren = getKeywordParameters(astNode);
-    // println("Children of the node <astNode> are: <astChildren>");
     int nonameChildIndex = 0;
     for (Feature feature <- lionType.features) {
+        // Skip annotation features
+        if (/^anno/ := feature.name) continue;
+
         value featureValue;
         if (feature.name in domain(astLabeledChildren)) {
             featureValue = astLabeledChildren[feature.name];            

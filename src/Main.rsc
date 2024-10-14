@@ -19,7 +19,7 @@ int main(int testArgument=0) {
     println(prettyNode(lionlangs[0]));
     
     // Generate Rascal ADT for the imported lioncore language
-    map[Symbol, Production] langADT = generateRascalADTFile(lionlangs[0], lionspace);
+    map[Symbol, Production] langADT = generateRascalADTFile(lionlangs[0].key, lionspace);
 
     // Dynamically instantiate model from the lionjson using newly generated ADT 
     // map[str, value] model = instantiateM1Model(|project://lionweb-rascal/input/ExprInstanceLW_2.json|, lionspace, langADT);
