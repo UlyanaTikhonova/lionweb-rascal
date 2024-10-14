@@ -6,7 +6,7 @@ import List;
 
 lexical IntegerLiteral = [0-9]+;
 lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
-lexical StringLiteral = [a-z0-9]*;
+lexical AnnotationString = ![\n]*;
 
 start syntax File = {Stmnt ";"}* statements;
 
@@ -34,7 +34,7 @@ syntax Literal
   = IntegerLiteral;
 
 syntax DocAnno
-  = "@doc" StringLiteral "\n";  
+  = "@doc " AnnotationString text;  
 
 // The cross-referencing mechanism of this language uses Identifiers:
 Def findVarDefinition(File file, Identifier varName) {

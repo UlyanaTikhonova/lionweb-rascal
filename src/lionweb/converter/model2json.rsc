@@ -112,7 +112,7 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
             featureValue = astNonameChildren[nonameChildIndex];
             nonameChildIndex += 1;
         };
-        println("Value for the feature <feature.name> is <featureValue>");
+        println("Value for the feature <feature.name> is <featureValue>, type is <typeOf(featureValue)>");
 
         switch (feature) {
             case Feature(Property property): 
@@ -127,10 +127,15 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
     // Extract annotations from the AST node into jsonnode.annotations
     // Note: we don't do type check for these annotations here! (might be too complex for Node annotations)
     for(str annoFeature <- [af | af <- astLabeledChildren, /^anno/ := af]) {
-        list[node] annoReference = typeCast(#list[node], astLabeledChildren[annoFeature]);
-        for (node astPointer <- annoReference) {            
-            jsonNode.annotations += typeCast(#Pointer[&T], astPointer).uid;
-        };
+        Feature annoContainment = [f | f <- lionType.features, /^anno/ := f.name][0];
+        jsonNode.annotations += instantiateNodeChildren(astLabeledChildren[annoFeature], 
+                                                        annoContainment.link.containment, 
+                                                        language, lionspace, jsonNode.id);
+        // list[node] annoReference = typeCast(#list[node], astLabeledChildren[annoFeature]);
+        // for (node astPointer <- annoReference) {          
+        //     // getId(object)  
+        //     jsonNode.annotations += typeCast(#Pointer[&T], astPointer).uid;
+        // };
     };
 
     // Store the constructed node
@@ -140,20 +145,27 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
 
 lionweb::converter::lionjson::Property instantiateProperty(value val, 
                                                            lionweb::m3::lioncore::Property property, 
-                                                           Language language, LionSpace lionspace)
-    = lionweb::converter::lionjson::Property(
+                                                           Language language, LionSpace lionspace) {
+    value propertyValue;
+    if(property.optional) {
+        list[value] listOfValues = typeCast(#list[value], val);
+        propertyValue = lionValue2json(listOfValues[0], property, language, lionspace);
+    }
+    else {
+        propertyValue = lionValue2json(val, property, language, lionspace);
+    }
+
+    return lionweb::converter::lionjson::Property(
                     feature2metapointer(lionspace.findInScope(language.key, property.key).feature, language), 
-                    \value = "<lionValue2json(val, property, language, lionspace)>");
+                    \value = "<propertyValue>");
+}
 
 value lionValue2json(value val, lionweb::m3::lioncore::Property property, Language language, LionSpace lionspace) {
     DataType valueType = lionspace.lookupInScope(property.\type, language).languageentity.datatype;
     if (DataType(Enumeration enum) := valueType) {
-        str literalName = substring("<val>", 0, size("<val>") - 2); // here doesn't work: we cannot get name of value, only of node!
-        return literalName;
-        // list[EnumerationLiteral] enumLiteral = [el | el <- enum.literals, el.name == literalName];
-        // if (size(enumLiteral) > 0) {
-        //     return enumLiteral[0].key;
-        // } else throw "Cannot find enumeration literal <literalName>";        
+        // TODO: replace substring with a proper regular expression
+        str literalName = substring("<val>", 0, size("<val>") - 2); // val is the name of constructor like "plus()"
+        return literalName;        
     } else
         return val;
 }
@@ -162,6 +174,17 @@ value lionValue2json(value val, lionweb::m3::lioncore::Property property, Langua
 lionweb::converter::lionjson::Containment instantiateContainment(value val, 
                                                            lionweb::m3::lioncore::Containment containment, 
                                                            Language language, LionSpace lionspace, Id parentId) {
+    list[Id] childrenIds = instantiateNodeChildren(val, containment, language, lionspace, parentId);
+
+    return lionweb::converter::lionjson::Containment(
+                    feature2metapointer(lionspace.findInScope(language.key, containment.key).feature, language),
+                    children = childrenIds
+    );
+}
+
+list[Id] instantiateNodeChildren(value val, 
+                                lionweb::m3::lioncore::Containment containment, 
+                                Language language, LionSpace lionspace, Id parentId) {
     list[Id] childrenIds = [];
 
     void processChildNode(node astChild) {
@@ -182,10 +205,7 @@ lionweb::converter::lionjson::Containment instantiateContainment(value val,
         };
     };
 
-    return lionweb::converter::lionjson::Containment(
-                    feature2metapointer(lionspace.findInScope(language.key, containment.key).feature, language),
-                    children = childrenIds
-    );
+    return childrenIds;
 }
 
 lionweb::converter::lionjson::Reference instantiateReference(value val, 

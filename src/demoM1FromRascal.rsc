@@ -15,13 +15,8 @@ import f1re::lionweb::examples::expression::\syntax;
 import f1re::lionweb::examples::expression::translators;
 
 int mainM1FromRascal(int testArgument=0) {
-    // str text = "x = 5;
-    //            '(10 + x);
-    //            '(100 - 8)";
-    str text = readFile(|project://lionweb-rascal/input/ExampleExpressionsFile.model|);
-    println("Parsing the text:\n <text>");
 
-    f1re::lionweb::examples::expression::\syntax::File parseTree = parse(#File, text);
+    f1re::lionweb::examples::expression::\syntax::File parseTree = parse(#File, |project://lionweb-rascal/input/ExampleExpressionsFile.model|);
     println(prettyTree(parseTree));
     f1re::lionweb::examples::expression::lang::ExpressionsFile abstractTree = file2lion(parseTree, filename = "ExampleExpressionsFile");
     println(prettyNode(abstractTree));

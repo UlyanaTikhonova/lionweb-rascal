@@ -16,25 +16,36 @@ ExpressionsFile file2lion(File file, str filename = "")
                     \name = filename,
                     \uid = "<file.src>");
 
-// Statement stmnt2adt((Comp)`<DocAnno anno Expr expr>`)
-//   = Statement();
-
 Statement expr2adt((Stmnt)`<Def def>`, File file)
   = Statement(expr2adt(def, file));
 
 Statement expr2adt((Stmnt)`<Comp comp>`, File file)
   = Statement(expr2adt(comp, file));
 
-Computation expr2adt(Comp comp, File file)
-  = Computation(expr2adt(comp.expr, file), 
+Computation expr2adt((Comp)`<Expr expr>`, File file)
+  = Computation(expr2adt(expr, file), 
                 \annoDocumentation = [],
-                \uid = "<comp.src>");
+                \uid = "<expr.src>");
+
+Computation expr2adt((Comp)`<DocAnno doc><Expr expr>`, File file)
+  = Computation(expr2adt(expr, file), 
+                \annoDocumentation = [expr2adt(doc, file)],
+                \uid = "<expr.src>");                
 
 VariableDefinition expr2adt(Def definition, File file)
   = VariableDefinition(varName = "<definition.name>", 
                        varValue = [expr2adt(definition.val, file)],
                        \annoDocumentation = [],
                        \uid = "<definition.src>");
+
+VariableDefinition expr2adt(definition: (Def)`<DocAnno doc> <Identifier name> = <Expr val>`, File file)
+  = VariableDefinition(varName = "<name>", 
+                       varValue = [expr2adt(val, file)],
+                       \annoDocumentation = [expr2adt(doc, file)],
+                       \uid = "<definition.src>");                       
+
+Documentation expr2adt((DocAnno)`@doc <AnnotationString doc>`, File file)
+  = Documentation(\body = ["<doc>"], \uid = "<doc.src>");
 
 Expression expr2adt((Expr)`(<Expr e>)`, File file)
   = expr2adt(e, file);
@@ -84,6 +95,11 @@ Stmnt adt2statement(Statement(Computation comp), ExpressionsFile exprFile)
 Comp adt2expr(Computation(Expression expr), ExpressionsFile exprFile)
   = (Comp)`<Expr e>` 
   when Expr e := adt2expr(expr, exprFile);
+
+DocAnno adt2exp(Documentation doc, ExpressionsFile exprFile)
+  = (DocAnno)`@doc <AnnotationString doctext>`
+  when size(doc.\body) > 0,
+       AnnotationString doctext := [AnnotationString]"<doc.\body[0]>";
 
 Expr adt2expr(Expression(Literal l), ExpressionsFile exprFile)
   = (Expr)`<IntegerLiteral val>` 
