@@ -18,7 +18,7 @@ int mainM1FromRascal(int testArgument=0) {
     // str text = "x = 5;
     //            '(10 + x);
     //            '(100 - 8)";
-    str text = readFile(|project://lionweb-rascal/input/exampleExpressionsM1.model|);
+    str text = readFile(|project://lionweb-rascal/input/ExampleExpressionsFile.model|);
     println("Parsing the text:\n <text>");
 
     f1re::lionweb::examples::expression::\syntax::File parseTree = parse(#File, text);
@@ -27,13 +27,13 @@ int mainM1FromRascal(int testArgument=0) {
     println(prettyNode(abstractTree));
 
     // To instantiate a model from the json file, we need to have its language in the context (aka lionspace)
-    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW_2.json|);
+    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExpressionsLanguageLW.json|);
     LionSpace lionspace = addLangsToLionspace(lionlangs);
     
     // println("Type of the AST: <#f1re::lionweb::examples::expression::lang::ExpressionsFile>");
 
     // Export an m1-model using the imported language and the previously generated Rascal ADT of this language 
-    loc jsonfile = |project://lionweb-rascal/output/exampleM1model.json|;
+    loc jsonfile = |project://lionweb-rascal/output/ExampleExpressionsFile.json|;
     exportM1Model(abstractTree, lionspace, lionlangs[0], jsonfile);
 
 

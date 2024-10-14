@@ -3,32 +3,10 @@ module f1re::lionweb::examples::expression::\syntax
 extend lang::std::Layout;
 
 import List;
-import IO;
 
 lexical IntegerLiteral = [0-9]+;
 lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
 lexical StringLiteral = [a-z0-9]*;
-
-// start syntax ExpressionsFile
-//     = {Expression ";"}* expressions;
-
-// syntax Expression
-//     = Expression: Literal literal
-//     | Expression: BinaryExpression binaryExpression;
-//     //| "(" Expression ")"
-
-// syntax Literal
-//     = Literal: IntegerLiteral value;
-
-// syntax BinaryExpression
-//     = left BinaryExpression: Expression leftOperand BinaryOperation operation Expression rightOperand;
-
-// syntax BinaryOperation
-//     = plus: "+"
-//     | mult: "*"
-//     | minus: "-";
-
-/// 
 
 start syntax File = {Stmnt ";"}* statements;
 

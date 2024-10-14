@@ -22,12 +22,11 @@ import f1re::lionweb::examples::expression::translators;
 
 int mainM1IntoRascal(int testArgument=0) {
     // To instantiate a model from the json file, we need to have its language in the context (aka lionspace)
-    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExprLanguageLW_2.json|);
+    list[lionweb::m3::lioncore::Language] lionlangs = importLionLanguages(|project://lionweb-rascal/input/ExpressionsLanguageLW.json|);
     LionSpace lionspace = addLangsToLionspace(lionlangs);
     
-    // Import an m1-model using the imported language and the previously generated Rascal ADT of this language 
-    // map[str, value] model = instantiateM1Model(|project://lionweb-rascal/input/ExprInstanceLW_2.json|, lionspace, #ExpressionsFile.definitions);
-    map[str, value] model = instantiateM1Model(|project://lionweb-rascal/../ExampleExpressionsFile_LWM1.json|, lionspace, #ExpressionsFile.definitions);
+    // Import an m1-model using the imported language and the previously generated Rascal ADT of this language
+    map[str, value] model = instantiateM1Model(|project://lionweb-rascal/../ExampleExpressionsFile.json|, lionspace, #ExpressionsFile.definitions);
     
     // Find the root node
     value root = max(range(model));
@@ -41,7 +40,7 @@ int mainM1IntoRascal(int testArgument=0) {
 
     // Unparse the instantiated model (AST)
     println(adt2text(root));
-    writeFile(|project://lionweb-rascal/input/exampleExpressionsM1.model|, adt2text(root));
+    writeFile(|project://lionweb-rascal/input/ExampleExpressionsFile.model|, adt2text(root));
     f1re::lionweb::examples::expression::\syntax::File exprFile = adt2parsetree(root);
     // println(prettyTree(exprFile));
     
