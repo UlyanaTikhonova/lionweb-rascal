@@ -4,6 +4,7 @@ extend lang::std::Layout;
 
 import List;
 
+// layout Whitespace = [\t-\n\r\ ]*;
 lexical IntegerLiteral = [0-9]+;
 lexical Identifier = [a-z][a-z0-9]* !>> [a-z0-9];
 lexical AnnotationString = ![\n]*;

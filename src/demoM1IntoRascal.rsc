@@ -41,7 +41,7 @@ int mainM1IntoRascal(int testArgument=0) {
     // Unparse the instantiated model (AST)
     println(adt2text(root));
     writeFile(|project://lionweb-rascal/input/ExampleExpressionsFile.model|, adt2text(root));
-    f1re::lionweb::examples::expression::\syntax::File exprFile = adt2parsetree(root);
+    // f1re::lionweb::examples::expression::\syntax::File exprFile = adt2parsetree(root);
     // println(prettyTree(exprFile));
     
     // Check separately: variable definition node

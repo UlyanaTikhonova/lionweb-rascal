@@ -1,4 +1,5 @@
+@doc this is a variable definition for x
 x = 500006;
-@doc this is an annotation
-(10 + x);
-(10 - 8)
+@doc change this annotation
+(1000 + x);
+(102 - 8)

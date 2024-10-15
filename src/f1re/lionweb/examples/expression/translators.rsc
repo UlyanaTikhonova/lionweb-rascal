@@ -83,20 +83,36 @@ File adt2parsetree(ExpressionsFile exprFile)
 //   when varId := [Identifier]"<def.varName>",
 //        varVal := adt2expr(def.varValue[0], exprFile);
 
+str adt2text(VariableDefinition def, ExpressionsFile exprFile)
+  = "@doc <def.annoDocumentation[0].body[0]>\n<def.varName> = <adt2expr(def.varValue[0], exprFile)>";
+
+Stmnt adt2statement(Statement(VariableDefinition def), ExpressionsFile exprFile)
+  = parse(#Stmnt, adt2text(def, exprFile)) //`<DocAnno doc> <Identifier varId> = <Expr varVal>`
+  when size(def.annoDocumentation) > 0;
+
 Stmnt adt2statement(Statement(VariableDefinition def), ExpressionsFile exprFile)
   = (Stmnt)`<Identifier varId> = <Expr varVal>`
   when varId := [Identifier]"<def.varName>",
-       varVal := adt2expr(def.varValue[0], exprFile);
+       varVal := adt2expr(def.varValue[0], exprFile),
+       size(def.annoDocumentation) == 0;
 
 Stmnt adt2statement(Statement(Computation comp), ExpressionsFile exprFile)
   = (Stmnt)`<Comp c>`
   when c := adt2expr(comp, exprFile);
 
-Comp adt2expr(Computation(Expression expr), ExpressionsFile exprFile)
-  = (Comp)`<Expr e>` 
-  when Expr e := adt2expr(expr, exprFile);
+str adt2text(Computation comp, ExpressionsFile exprFile)
+  = "@doc <comp.annoDocumentation[0].body[0]>\n<adt2expr(comp.expr, exprFile)>";
 
-DocAnno adt2exp(Documentation doc, ExpressionsFile exprFile)
+Comp adt2expr(c: Computation(Expression expr), ExpressionsFile exprFile)
+  = parse(#Comp, adt2text(c, exprFile))  //(Comp)`<DocAnno doc> <Expr e>` 
+  when size(c.\annoDocumentation) > 0;
+
+Comp adt2expr(c: Computation(Expression expr), ExpressionsFile exprFile)
+  = (Comp)`<Expr e>` 
+  when Expr e := adt2expr(expr, exprFile),
+       size(c.annoDocumentation) == 0;
+
+DocAnno adt2expr(Documentation doc, ExpressionsFile exprFile)
   = (DocAnno)`@doc <AnnotationString doctext>`
   when size(doc.\body) > 0,
        AnnotationString doctext := [AnnotationString]"<doc.\body[0]>";
