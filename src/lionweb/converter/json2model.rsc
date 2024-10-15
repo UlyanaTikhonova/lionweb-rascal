@@ -19,8 +19,11 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
     // Only lioncore classifiers are serialized as json nodes
     value classifier2value(lionweb::converter::lionjson::Node modelNode) {
         IKeyed nodeType = lionspace.findInScope(modelNode.classifier.language, modelNode.classifier.key);
-        Concept cpt = nodeType.languageentity.classifier.concept;
-        if(cpt.abstract) throw "Cannot instantiate abstract concept";
+        // Now: this one can be not only a concept but also an annotation!
+        Classifier cpt = nodeType.languageentity.classifier;
+        // todo: why the following doesn't work?
+        // if((Classifier(Concept(abstract = true)) := cpt) || (Classifier(Interface) := cpt)) 
+        //                                                     throw "Cannot instantiate abstract concept";
 
         // Get the rascal (ADT) type of the lion language entity
         Symbol cptADT = adt(cpt.name, []);
@@ -107,6 +110,45 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         return childValue;
     }
 
+    // The special case of annotation containment
+    // todo: check that we end up here actually
+    value getFeatureValue(Feature(Link(Containment containmentFeature, name = /^anno/)),
+                            lionweb::converter::lionjson::Node parentNode) {
+        println("Annotation as a property for the containment: <containmentFeature.key>");
+        lionweb::converter::lionjson::Node annoJsonNode;
+        list[Id] annoNodeId = [];
+        // search for the corresponding annotation in the json chunk        
+        for(Id annoId <- parentNode.annotations) {
+            println("   annotation node id: <annoId>");
+            lionweb::converter::lionjson::Node childnode = getJsonNode(annoId);
+            println("   meta-pointer id: <childnode.classifier.key>");
+            // see lioncore2adt: containment.key = class.key + annotation.key
+            int substring = findLast(containmentFeature.key, childnode.classifier.key);
+            if(substring > 0 && size(containmentFeature.key) - size(childnode.classifier.key) == substring) {
+                annoJsonNode = childnode;
+                annoNodeId += annoId;
+                break;
+            };
+        };
+
+        if(size(annoNodeId) == 0) return [];
+
+        // Construct value from the json node
+        value childValue = classifier2value(annoJsonNode);
+        // The original feature type (parameter) might be an inherited type of the declared feature type (argument)
+        // then we need to wrap it into the chain of the corresponding constructors: not yet implemented for annotations
+        // println("Wrap inheritance for <childValue>");
+        // childValue = wrapInheritance(childValue, 
+        //                             lionspace.findInScope(childnode.classifier.language, childnode.classifier.key), 
+        //                             lionspace.lookup(containmentFeature.\type));
+        // ... store the resulting value in the built nodes
+        builtNodes[annoNodeId[0]] = childValue;
+
+        // The annotation feature is optional: we return a list
+        return [childValue];
+    }
+
+    // TODO: make a specific case with the feature name starting with 'anno'
     value getFeatureValue(Feature(Link(Containment containmentFeature)),
                             lionweb::converter::lionjson::Node parentNode) {
         list[Id] jsonChildren = [];
