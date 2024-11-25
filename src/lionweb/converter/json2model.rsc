@@ -74,14 +74,12 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         Production prod = langADT[datatypeADT];
         type[value] datatypeType = type(datatypeADT, (datatypeADT : prod));
 
-        // Not this: Find the name of the constructor using the key in the child value
-        // But: The json value is the name of the enumeration literal.
-        // return make(datatypeType, jsonProperty.\value, [], ());
-        // IKeyed enumLiteral = lionspace.findInScope(jsonProperty.property.language, jsonProperty.\value);
-        if (DataType(Enumeration enum) := dataType) 
-            if (jsonProperty.\value in [el.name | el <- enum.literals]) {
-                return make(datatypeType, jsonProperty.\value, [], ());
-            };
+        // Find the name of the constructor using the key in the child value
+        IKeyed enumLiteral = lionspace.findInScope(jsonProperty.property.language, jsonProperty.\value);
+        if (IKeyed(EnumerationLiteral el) := enumLiteral) {
+            return make(datatypeType, el.name, [], ());
+        };
+
         return "Error in property2value for value <jsonProperty.\value>";
     };
 
@@ -148,12 +146,11 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         return [childValue];
     }
 
-    // TODO: make a specific case with the feature name starting with 'anno'
     value getFeatureValue(Feature(Link(Containment containmentFeature)),
                             lionweb::converter::lionjson::Node parentNode) {
         list[Id] jsonChildren = [];
         // search for the corresponding containment in the json node
-        for(jsonContainment <- parentNode.containments) {
+        for(lionweb::converter::lionjson::Containment jsonContainment <- parentNode.containments) {
             if(jsonContainment.containment.key == containmentFeature.key) {
                 jsonChildren = jsonContainment.children;
                 break;

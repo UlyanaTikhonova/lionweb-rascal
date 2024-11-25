@@ -26,7 +26,7 @@ int mainM1IntoRascal(int testArgument=0) {
     LionSpace lionspace = addLangsToLionspace(lionlangs);
     
     // Import an m1-model using the imported language and the previously generated Rascal ADT of this language
-    map[str, value] model = instantiateM1Model(|project://lionweb-rascal/../ExampleExpressionsFile.json|, lionspace, #ExpressionsFile.definitions);
+    map[str, value] model = instantiateM1Model(|project://lionweb-rascal/input/ExampleExpressionsFile.json|, lionspace, #ExpressionsFile.definitions);
     
     // Find the root node
     value root = max(range(model));

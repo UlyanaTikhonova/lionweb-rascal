@@ -28,7 +28,7 @@ data Node
 
 data Containment
     = Containment(MetaPointer containment, 
-                  list[Id] children = "");
+                  list[Id] children = []);
 
 data Property
     = Property(MetaPointer property, str \value = "");
