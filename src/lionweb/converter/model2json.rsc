@@ -65,12 +65,12 @@ Node instantiateLangEntity(classifier: Classifier(Concept(abstract = true)),
     = unwrapInheritance(astNode, classifier, language, lionspace, parentId);
 
 // Nodes can be directly instantiated for concrete concepts and annotations
-Node instantiateLangEntity(classifier: Classifier(Annotation), 
+Node instantiateLangEntity(classifier: Classifier(Annotation a), 
                             node astNode, Language language, LionSpace lionspace, Id parentId) 
     = instantiateNode(astNode, classifier, language, lionspace, parentId);
 
 // An interface should not be instantiated: in Rascal it wraps (eventually) a concrete concept
-Node instantiateLangEntity(classifier: Classifier(Interface), 
+Node instantiateLangEntity(classifier: Classifier(Interface i), 
                             node astNode, Language language, LionSpace lionspace, Id parentId) 
     = unwrapInheritance(astNode, classifier, language, lionspace, parentId);
 
@@ -100,11 +100,9 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
 
     list[value] astNonameChildren = getChildren(astNode);
     map[str, value] astLabeledChildren = getKeywordParameters(astNode);
+
     int nonameChildIndex = 0;
     for (Feature feature <- lionType.features) {
-        // Skip annotation features
-        if (/^anno/ := feature.name) continue;
-
         value featureValue;
         if (feature.name in domain(astLabeledChildren)) {
             featureValue = astLabeledChildren[feature.name];            
@@ -126,16 +124,14 @@ Node instantiateNode(node astNode, Classifier lionType, Language language, LionS
 
     // Extract annotations from the AST node into jsonnode.annotations
     // Note: we don't do type check for these annotations here! (might be too complex for Node annotations)
-    for(str annoFeature <- [af | af <- astLabeledChildren, /^anno/ := af]) {
-        Feature annoContainment = [f | f <- lionType.features, /^anno/ := f.name][0];
-        jsonNode.annotations += instantiateNodeChildren(astLabeledChildren[annoFeature], 
-                                                        annoContainment.link.containment, 
-                                                        language, lionspace, jsonNode.id);
-        // list[node] annoReference = typeCast(#list[node], astLabeledChildren[annoFeature]);
-        // for (node astPointer <- annoReference) {          
-        //     // getId(object)  
-        //     jsonNode.annotations += typeCast(#Pointer[&T], astPointer).uid;
-        // };
+    if ("lionwebAnnotations" in astLabeledChildren) {
+        list[node] annotationsList = typeCast(#list[node], astLabeledChildren["lionwebAnnotations"]);    
+        for (node annotation <- annotationsList) {        
+            // TODO: if annotations is a list of nodes, then how do we know the type (MetaPointer) of each of them
+            Node annoNode = instantiateLangEntity(getNodeType(annotation, language, lionspace),
+                                                    annotation, language, lionspace, jsonNode.id);
+            jsonNode.annotations += [annoNode.id];
+        };
     };
 
     // Store the constructed node

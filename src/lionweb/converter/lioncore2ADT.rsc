@@ -134,8 +134,7 @@ public list[str] BUILTIN_TYPES = ["Integer", "String", "Boolean"];
 map[Symbol, Production] language2adt(Language lang, LionSpace lionspace = defaultSpace(lang)) {
     map[Symbol, Production] langADT = ();
 
-    // Prepare language for the transformations: embed annotations as containments and flattern inheritance
-    lang = embedAnnotations(lang);
+    // Prepare language for the transformations: flattern inheritance
     lang = flattenInheritance(lang);
     lionspace.add(lang);    // update the language in the space, so that we can rely on its adjusted structure later
     
@@ -169,7 +168,8 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(cpt: Conce
     list[tuple[Symbol, bool]] entityParameters = [feature2parameter(f, lang, lionspace) | f <- cpt.features];
     Production definition = cons(label(cpt.name, cptADT),
                                  [param | <param, hasDefault> <- entityParameters, hasDefault == false],
-                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true] + [identifierField()], 
+                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true] + 
+                                    [identifierField(), annotationsField()], 
                                  {});
 
     set[Production] alts = {definition} + 
@@ -221,7 +221,8 @@ tuple[Symbol, Production] entity2production(LanguageEntity(Classifier(Annotation
     list[tuple[Symbol, bool]] entityParameters = [feature2parameter(f, lang, lionspace) | f <- annotation.features];
     Production definition = cons(label(annotation.name, annoADT),
                                  [param | <param, hasDefault> <- entityParameters, hasDefault == false],
-                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true] + [identifierField()], 
+                                 [param | <param, hasDefault> <- entityParameters, hasDefault == true] + 
+                                    [identifierField(), annotationsField()], 
                                  {});
 
     set[Production] alts = {definition} + 
@@ -239,7 +240,7 @@ Production wrapInheritance(Classifier parent, Symbol parentADT, Classifier child
     list[tuple[Symbol, bool]] childParameters = [feature2parameter(f, lang, lionspace) | f <- child.features];
     return cons(label(parent.name, parentADT), 
                 [label(field(child.name), adt(child.name, []))],
-                [param | <param, _> <- childParameters] + [identifierField()],  
+                [param | <param, _> <- childParameters] + [identifierField(), annotationsField()],  
                 {\tag("subtype")});
 }
 
@@ -271,6 +272,12 @@ Symbol identifierField()
 // type parameter here corresponds to the type of the referenced entity
 Symbol referenceType(Symbol refTypeAdt)
     = \adt("Pointer", [refTypeAdt]);
+
+// Annotation in lionweb Rascal
+Symbol annotationsField()
+    = label("lionwebAnnotations", \list(adt("Node", [])));      
+    // TODO: check that it is indeed what want (what is an adt type for string)
+    // Can we make it a map of annotations (by their lionweb id?)
 
 // Unfold features into parameters of the constructor
 // - An optional feature is represented by rascal list (default = []).

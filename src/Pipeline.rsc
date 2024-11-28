@@ -28,8 +28,7 @@ list[lionweb::m3::lioncore::Language] importLionLanguages(loc jsonfile) {
 lionweb::m3::lionspace::LionSpace addLangsToLionspace(list[lionweb::m3::lioncore::Language] langs,
                                                     lionweb::m3::lionspace::LionSpace lionspace = newLionSpace()) {
     for(lionweb::m3::lioncore::Language lang <- langs) {
-        // Prepare language for the transformations: embed annotations as containments and flattern inheritance
-        lang = embedAnnotations(lang);
+        // Prepare language for the transformations: flattern inheritance
         lang = flattenInheritance(lang);
         lionspace.add(lang);
     }

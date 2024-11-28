@@ -14,7 +14,8 @@ import f1re::lionweb::examples::expression::\lang;
 ExpressionsFile file2lion(File file, str filename = "")
   = ExpressionsFile(\body = [expr2adt(s, file) | (Stmnt)`<Stmnt s>` <- file.statements],
                     \name = filename,
-                    \uid = "<file.src>");
+                    \uid = "<file.src>",
+                    \lionwebAnnotations = []);
 
 Statement expr2adt((Stmnt)`<Def def>`, File file)
   = Statement(expr2adt(def, file));
@@ -24,25 +25,25 @@ Statement expr2adt((Stmnt)`<Comp comp>`, File file)
 
 Computation expr2adt((Comp)`<Expr expr>`, File file)
   = Computation(expr2adt(expr, file), 
-                \annoDocumentation = [],
-                \uid = "<expr.src>");
+                \uid = "<expr.src>",
+                \lionwebAnnotations = []);
 
 Computation expr2adt((Comp)`<DocAnno doc><Expr expr>`, File file)
-  = Computation(expr2adt(expr, file), 
-                \annoDocumentation = [expr2adt(doc, file)],
-                \uid = "<expr.src>");                
+  = Computation(expr2adt(expr, file),
+                \uid = "<expr.src>",
+                \lionwebAnnotations = [expr2adt(doc, file)]);                
 
 VariableDefinition expr2adt(Def definition, File file)
   = VariableDefinition(varName = "<definition.name>", 
                        varValue = [expr2adt(definition.val, file)],
-                       \annoDocumentation = [],
-                       \uid = "<definition.src>");
+                       \uid = "<definition.src>",
+                       \lionwebAnnotations = []);
 
 VariableDefinition expr2adt(definition: (Def)`<DocAnno doc> <Identifier name> = <Expr val>`, File file)
   = VariableDefinition(varName = "<name>", 
                        varValue = [expr2adt(val, file)],
-                       \annoDocumentation = [expr2adt(doc, file)],
-                       \uid = "<definition.src>");                       
+                       \uid = "<definition.src>",
+                       \lionwebAnnotations = [expr2adt(doc, file)]);                       
 
 Documentation expr2adt((DocAnno)`@doc <AnnotationString doc>`, File file)
   = Documentation(\body = ["<doc>"], \uid = "<doc.src>");
@@ -51,7 +52,8 @@ Expression expr2adt((Expr)`(<Expr e>)`, File file)
   = expr2adt(e, file);
 
 Expression expr2adt((Expr)`<Literal l>`, File file)
-  = Expression(f1re::lionweb::examples::expression::\lang::Literal(\value=toInt("<l>"), \uid = "<l.src>"));
+  = Expression(f1re::lionweb::examples::expression::\lang::Literal(\value=toInt("<l>"), 
+                                                                    \uid = "<l.src>"));
 
 Expression expr2adt(expr: (Expr)`<Identifier varName>`, File file)
   = Expression(VarReference(\ref = lionweb::pointer::Pointer("<findVarDefinition(file, varName).src>"),
@@ -78,39 +80,34 @@ str adt2text(ExpressionsFile exprFile)
 File adt2parsetree(ExpressionsFile exprFile)
   = parse(#File, adt2text(exprFile));
 
-// Stmnt adt2statement(Statement(VariableDefinition def), ExpressionsFile exprFile)
-//   = (Stmnt)`<Identifier varId> = <Expr varVal>`
-//   when varId := [Identifier]"<def.varName>",
-//        varVal := adt2expr(def.varValue[0], exprFile);
-
 str adt2text(VariableDefinition def, ExpressionsFile exprFile)
-  = "@doc <def.annoDocumentation[0].body[0]>\n<def.varName> = <adt2expr(def.varValue[0], exprFile)>";
+  = "<adt2expr(def.lionwebAnnotations[0], exprFile)>\n<def.varName> = <adt2expr(def.varValue[0], exprFile)>";
 
 Stmnt adt2statement(Statement(VariableDefinition def), ExpressionsFile exprFile)
   = parse(#Stmnt, adt2text(def, exprFile)) //`<DocAnno doc> <Identifier varId> = <Expr varVal>`
-  when size(def.annoDocumentation) > 0;
+  when size(def.lionwebAnnotations) > 0;
 
 Stmnt adt2statement(Statement(VariableDefinition def), ExpressionsFile exprFile)
   = (Stmnt)`<Identifier varId> = <Expr varVal>`
   when varId := [Identifier]"<def.varName>",
        varVal := adt2expr(def.varValue[0], exprFile),
-       size(def.annoDocumentation) == 0;
+       size(def.lionwebAnnotations) == 0;
 
 Stmnt adt2statement(Statement(Computation comp), ExpressionsFile exprFile)
   = (Stmnt)`<Comp c>`
   when c := adt2expr(comp, exprFile);
 
 str adt2text(Computation comp, ExpressionsFile exprFile)
-  = "@doc <comp.annoDocumentation[0].body[0]>\n<adt2expr(comp.expr, exprFile)>";
+  = "<adt2expr(comp.lionwebAnnotations[0], exprFile)>\n<adt2expr(comp.expr, exprFile)>";
 
 Comp adt2expr(c: Computation(Expression expr), ExpressionsFile exprFile)
   = parse(#Comp, adt2text(c, exprFile))  //(Comp)`<DocAnno doc> <Expr e>` 
-  when size(c.\annoDocumentation) > 0;
+  when size(c.lionwebAnnotations) > 0;
 
 Comp adt2expr(c: Computation(Expression expr), ExpressionsFile exprFile)
   = (Comp)`<Expr e>` 
   when Expr e := adt2expr(expr, exprFile),
-       size(c.annoDocumentation) == 0;
+       size(c.lionwebAnnotations) == 0;
 
 DocAnno adt2expr(Documentation doc, ExpressionsFile exprFile)
   = (DocAnno)`@doc <AnnotationString doctext>`
