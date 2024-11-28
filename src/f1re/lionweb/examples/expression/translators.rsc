@@ -87,8 +87,12 @@ str adt2text(VariableDefinition def, ExpressionsFile exprFile)
   = "<adt2expr(def.lionwebAnnotations[0], exprFile)>\n<def.varName> = <adt2expr(def.varValue[0], exprFile)>";
 
 Stmnt adt2statement(Statement(VariableDefinition def), ExpressionsFile exprFile)
-  = parse(#Stmnt, adt2text(def, exprFile)) //`<DocAnno doc> <Identifier varId> = <Expr varVal>`
-  when size(def.lionwebAnnotations) > 0;
+  = (Stmnt)`<DocAnno doc>
+           '<Identifier varId> = <Expr varVal>`
+  when size(def.lionwebAnnotations) > 0,
+       DocAnno doc := adt2expr(def.lionwebAnnotations[0], exprFile),
+       Expr varVal := adt2expr(def.varValue[0], exprFile),
+       varId := [Identifier]"<def.varName>";
 
 Stmnt adt2statement(Statement(VariableDefinition def), ExpressionsFile exprFile)
   = (Stmnt)`<Identifier varId> = <Expr varVal>`
@@ -104,8 +108,11 @@ str adt2text(Computation comp, ExpressionsFile exprFile)
   = "<adt2expr(comp.lionwebAnnotations[0], exprFile)>\n<adt2expr(comp.expr, exprFile)>";
 
 Comp adt2expr(c: Computation(Expression expr), ExpressionsFile exprFile)
-  = parse(#Comp, adt2text(c, exprFile))  //(Comp)`<DocAnno doc> <Expr e>` 
-  when size(c.lionwebAnnotations) > 0;
+  = (Comp)`<DocAnno doc> 
+          '<Expr e>`  //parse(#Comp, adt2text(c, exprFile))  //(Comp)`<DocAnno doc> <Expr e>` 
+  when size(c.lionwebAnnotations) > 0,
+        DocAnno doc := adt2expr(c.lionwebAnnotations[0], exprFile),
+        Expr e := adt2expr(expr, exprFile);
 
 Comp adt2expr(c: Computation(Expression expr), ExpressionsFile exprFile)
   = (Comp)`<Expr e>` 
@@ -124,7 +131,7 @@ Expr adt2expr(Expression(Literal l), ExpressionsFile exprFile)
 Expr adt2expr(Expression(VarReference vr), ExpressionsFile exprFile)
   = (Expr)`<Identifier vName>`
   when VariableDefinition vd := typeCast(#VariableDefinition, 
-                              resolve(vr.\ref, [d | s <- exprFile.\body, Statement(VariableDefinition d) := s])), 
+                              resolve(vr.ref, [d | s <- exprFile.\body, Statement(VariableDefinition d) := s])), 
         Identifier vName := [Identifier]"<vd.\varName>";
 
 Expr adt2expr(Expression(BinaryExpression(plus(), Expression leftOp, Expression rightOp)), ExpressionsFile exprFile)

@@ -26,8 +26,10 @@ int mainM1IntoRascal(int testArgument=0) {
     LionSpace lionspace = addLangsToLionspace(lionlangs);
     
     // Import an m1-model using the imported language and the previously generated Rascal ADT of this language
-    map[str, value] model = instantiateM1Model(|project://lionweb-rascal/input/ExampleExpressionsFile.json|, lionspace, #ExpressionsFile.definitions);
-    
+    // in our DSL annotations are in an independent ADT tree, so we need to add their definitions explicitly.
+    map[str, value] model = instantiateM1Model(|project://lionweb-rascal/input/ExampleExpressionsFile.json|, lionspace, 
+                                                #ExpressionsFile.definitions + #Documentation.definitions);
+
     // Find the root node
     value root = max(range(model));
     for(value modelNode <- range(model)) {

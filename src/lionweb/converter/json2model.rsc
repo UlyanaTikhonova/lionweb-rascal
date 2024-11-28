@@ -8,6 +8,7 @@ import List;
 import lionweb::pointer;
 import lionweb::converter::lionjson;
 import lionweb::converter::lioncore2ADT;
+import lionweb::converter::json2lioncore;
 import lionweb::m3::lioncore;
 import lionweb::m3::lionspace;
 
@@ -49,6 +50,14 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         };
         // Add unique identifier to the build concept, equal to the id of the json node
         keywordParamValues["uid"] = modelNode.id;
+        // Build annotation nodes
+        if (size(modelNode.annotations) > 0) {
+           list[node] annotations = [];
+           for (lionweb::converter::lionjson::Node annoNode <- collectNodes(modelNode.annotations, json)) {
+                annotations += classifier2value(annoNode);
+           }; 
+           keywordParamValues["lionwebAnnotations"] = annotations;
+        };
         
         println("Constructed parameters: <paramValues>");
         println("Constructed keyword parameters: <keywordParamValues>");
@@ -108,44 +117,6 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         return childValue;
     }
 
-    // The special case of annotation containment
-    // todo: check that we end up here actually
-    value getFeatureValue(Feature(Link(Containment containmentFeature, name = /^anno/)),
-                            lionweb::converter::lionjson::Node parentNode) {
-        println("Annotation as a property for the containment: <containmentFeature.key>");
-        lionweb::converter::lionjson::Node annoJsonNode;
-        list[Id] annoNodeId = [];
-        // search for the corresponding annotation in the json chunk        
-        for(Id annoId <- parentNode.annotations) {
-            println("   annotation node id: <annoId>");
-            lionweb::converter::lionjson::Node childnode = getJsonNode(annoId);
-            println("   meta-pointer id: <childnode.classifier.key>");
-            // see lioncore2adt: containment.key = class.key + annotation.key
-            int substring = findLast(containmentFeature.key, childnode.classifier.key);
-            if(substring > 0 && size(containmentFeature.key) - size(childnode.classifier.key) == substring) {
-                annoJsonNode = childnode;
-                annoNodeId += annoId;
-                break;
-            };
-        };
-
-        if(size(annoNodeId) == 0) return [];
-
-        // Construct value from the json node
-        value childValue = classifier2value(annoJsonNode);
-        // The original feature type (parameter) might be an inherited type of the declared feature type (argument)
-        // then we need to wrap it into the chain of the corresponding constructors: not yet implemented for annotations
-        // println("Wrap inheritance for <childValue>");
-        // childValue = wrapInheritance(childValue, 
-        //                             lionspace.findInScope(childnode.classifier.language, childnode.classifier.key), 
-        //                             lionspace.lookup(containmentFeature.\type));
-        // ... store the resulting value in the built nodes
-        builtNodes[annoNodeId[0]] = childValue;
-
-        // The annotation feature is optional: we return a list
-        return [childValue];
-    }
-
     value getFeatureValue(Feature(Link(Containment containmentFeature)),
                             lionweb::converter::lionjson::Node parentNode) {
         list[Id] jsonChildren = [];
@@ -203,7 +174,7 @@ map[Id, value] jsonlang2model(SerializationChunk json, LionSpace lionspace,  map
         return childValues[0];
     }
 
-    // TODO: generalize the following for interface and annotation
+    // TODO: generalize the following for interface and annotation (currently multiple inheritance wrapping is not possible)
     // TODO: add transformation for built-in concept types (Node and INamed)
     value wrapInheritance(value childValue, 
                             IKeyed(LanguageEntity(Classifier(Concept childType))),  
