@@ -11,6 +11,7 @@ import f1re::lionweb::examples::expression::\syntax;
 import f1re::lionweb::examples::expression::\lang;
 
 // Translate concrete syntax to ADT
+// In this DSL we use Rascal locations as unique identifiers of the nodes
 ExpressionsFile file2lion(File file, str filename = "")
   = ExpressionsFile(\body = [expr2adt(s, file) | (Stmnt)`<Stmnt s>` <- file.statements],
                     \name = filename,
@@ -23,14 +24,16 @@ Statement expr2adt((Stmnt)`<Def def>`, File file)
 Statement expr2adt((Stmnt)`<Comp comp>`, File file)
   = Statement(expr2adt(comp, file));
 
+// In this DSL we need to take care of distinguishing identifiers of computations and their expressions,
+// as their locations might be identical
 Computation expr2adt((Comp)`<Expr expr>`, File file)
   = Computation(expr2adt(expr, file), 
-                \uid = "<expr.src>",
+                \uid = "Computation@<expr.src>",
                 \lionwebAnnotations = []);
 
 Computation expr2adt((Comp)`<DocAnno doc><Expr expr>`, File file)
   = Computation(expr2adt(expr, file),
-                \uid = "<expr.src>",
+                \uid = "Computation@<expr.src>",
                 \lionwebAnnotations = [expr2adt(doc, file)]);                
 
 VariableDefinition expr2adt(Def definition, File file)
