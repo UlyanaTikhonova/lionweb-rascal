@@ -27,12 +27,13 @@ On the model (M1) level, both directions, from LionWeb to Rascal and from Rascal
 For the imported LionWeb language we need to create the corresponding concrete syntax using Rascal grammar and the translators between the language ADT and this concrete grammar. 
 The example of such a language enhancement can be found in `f1re/lionweb/examples/expression`.
 
-This project was presented at the LangDev 2024 conference. The recording of the talk:
+This project was presented at the LangDev 2024 conference. Here is the recording of the talk:
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Uq414dBALg4/0.jpg)](https://www.youtube.com/watch?v=Uq414dBALg4)
 
 ## References
 * Specification of the [LionWeb serialization format](https://lionweb.io/specification/serialization/serialization.html)
 * Specification of the [LionCore meta-meta-model (M3)](https://lionweb.io/specification/metametamodel/metametamodel.html)
 * [Rascal meta-programming language](https://www.rascal-mpl.org/)
-* An informal introduction into this project in [my blog post](https://www.f1re.io/2024-07-08/lionweb-in-rascal).
+* An informal introduction into this project in [my blog post](https://www.f1re.io/2024-07-08/lionweb-in-rascal)
 
