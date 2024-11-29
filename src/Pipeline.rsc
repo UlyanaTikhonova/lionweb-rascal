@@ -43,7 +43,7 @@ map[Symbol, Production] generateRascalADTFile(Id langId,
     print("Language data set: ");
     println(domain(langADT));
     println("Writing ADT data types to the Rascal file at: <moduleLocation(lang.name)>");
-    writeLionADTModule(lang, langADT);
+    writeLionADTModule(lang, langADT, lionspace);
     return langADT;
 }
 

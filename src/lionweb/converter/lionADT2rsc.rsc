@@ -2,16 +2,18 @@ module lionweb::converter::lionADT2rsc
 
 import lionweb::converter::lioncore2ADT;
 import lionweb::m3::lioncore;
+import lionweb::m3::lionspace;
 import lionweb::pointer;
 
 import IO;
 import DateTime;
 import Type;
 import List;
+import Set;
 import String;
 import Map;
 
-void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT) 
+void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT, LionSpace lionspace) 
   = writeFile(moduleLocation(lionlang.name),
                 "module <moduleName(lionlang.name)>
                 '
@@ -20,9 +22,8 @@ void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT)
                 '
                 'import DateTime;
                 'import lionweb::pointer;
-                'import lang::json::ast::JSON;
                 '
-                '<lion2rsc(lionlang, langADT)>");
+                '<lion2rsc(lionlang, langADT, lionspace)>");
 
 str moduleName(str langName)
     = intercalate("::", split(".", langName));
@@ -30,11 +31,13 @@ str moduleName(str langName)
 loc moduleLocation(str langName)
     = |project://lionweb-rascal/src/<intercalate("/", split(".", langName)[..-1])>| + (last(split(".", langName)) + ".rsc");  
 
-str lion2rsc(Language lionlang, map[Symbol, Production] langADT)
-    = langDependencies(lionlang.dependsOn) + langADTs(langADT);
+str lion2rsc(Language lionlang, map[Symbol, Production] langADT, LionSpace lionspace)
+    = langDependencies(lionlang.dependsOn, lionspace) + "\n\n" + langADTs(langADT);
 
-str langDependencies(list[Pointer[Language]] langDependencies)
-    = "";
+str langDependencies(list[Pointer[Language]] langDependencies, LionSpace lionspace)
+    = intercalate("\n", ["import <moduleName(l.name)>;" | lp <- langDependencies, 
+                          l := lionspace.lookup(lp).language,
+                          l.key != "LionCore-M3", l.key != "LionCore-builtins"]);
 
 str langADTs(map[Symbol, Production] langADT) 
     = intercalate("\n\n", [production2rsc(prod) | prod <- range(langADT)]);
@@ -44,10 +47,15 @@ str langADTs(map[Symbol, Production] langADT)
 
 str production2rsc(choice(Symbol typeDef, set[Production] alterns)) 
   = "data <typeDef.name>\n  = <intercalate("\n  | ", [ alternative2rsc(p) | Production p <- alterns ])>
-    '  ;";
+    '  ;"
+    when size(alterns) > 0;
+
+str production2rsc(choice(Symbol typeDef, set[Production] alterns)) 
+  = "data <typeDef.name>;"
+    when size(alterns) == 0;
 
 // The case of a classifier with an extension (wrapped inheritance)
-// TODO: change this patternt to really recognize wrapped inheritance 
+// TODO: change this pattern to really recognize wrapped inheritance 
 // (as we can have parameters without default values in usual cases too)
 str alternative2rsc(cons(label(str c, _), [label(str x, adt(str sub, []))], [*subs], {\tag("subtype")}))
   = "<c>(<intercalate("\n      , ", args)>)"
