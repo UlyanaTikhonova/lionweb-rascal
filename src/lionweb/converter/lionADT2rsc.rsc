@@ -13,7 +13,8 @@ import Set;
 import String;
 import Map;
 
-void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT, LionSpace lionspace) 
+void writeLionADTModule(Language lionlang, map[Symbol, Production] langADT, 
+                        LionSpace lionspace = defaultSpace(lionlang)) 
   = writeFile(moduleLocation(lionlang.name),
                 "module <moduleName(lionlang.name)>
                 '
